@@ -1,21 +1,22 @@
 
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TimeEntry {
 
-  String time;
+  String time; // Reference modification to include milliseconds
   String name;
 
-  TimeEntry({required this.time, this.name = ''});
+  TimeEntry({required this.time, this.name = ''}); // Ensure usage of updated format
 
-  Map<String, String> toMap() {
+  Map<String, String> toMap() { // Ensure time format includes milliseconds
     return {'time': time, 'name': name};
   }
 
   static TimeEntry fromMap(Map<String, String> map) {
-    return TimeEntry(time: map['time']!, name: map['name'] ?? '');
+    return TimeEntry(time: map['time']!, name: map['name'] ?? ''); // Ensure updated format
 
   }
 }
@@ -77,6 +78,15 @@ class TimeListScreen extends StatefulWidget {
 
 class _TimeListScreenState extends State<TimeListScreen> {
   List<TimeEntry> _times = [];
+  // Dummy method to simulate receiving times over Bluetooth
+  void _simulateBluetoothTimeEntry() {
+    // Simulate receiving a new time entry
+    final receivedTimeEntry = TimeEntry(time: DateFormat('HH:mm:ss.SSS').format(DateTime.now()), name: 'Received via Bluetooth');
+    setState(() {
+      _times.add(receivedTimeEntry);
+    });
+    _saveTimes();
+  }
 
   void _editName(int index) {
     showDialog(
@@ -97,6 +107,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
   void initState() {
     super.initState();
     _loadTimes();
+    _simulateBluetoothTimeEntry();
   }
 
   // Load times from SharedPreferences
@@ -106,7 +117,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
     if (timeStringList != null) {
       setState(() {
         _times = timeStringList
-            .map((timeString) => TimeEntry.fromMap(Map<String, String>.from(json.decode(timeString))))
+            .map((timeString) => TimeEntry.fromMap(Map<String, String>.from(json.decode(timeString)))) // Ensure updated format
             .toList();
       });
     }
@@ -130,7 +141,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
 
   // Add a new time
   void _addTime() async {
-    final newTimeEntry = TimeEntry(time: DateTime.now().toString());
+    final newTimeEntry = TimeEntry(time: DateFormat('HH:mm:ss.SSS').format(DateTime.now()));
     setState(() {
       _times.add(newTimeEntry);
     });
@@ -150,7 +161,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
           return ListTile(
             title: Text(entry.name.isEmpty ? ' ' : entry.name),
 
-            subtitle: Text(entry.time),
+            subtitle: Text(entry.time), // Ensure updated format displays correctly
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -166,10 +177,6 @@ class _TimeListScreenState extends State<TimeListScreen> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addTime,
-        child: const Icon(Icons.add),
       ),
     );
   }
