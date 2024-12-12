@@ -411,7 +411,7 @@ child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
             borderRadius: BorderRadius.circular(30.0),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Search by name',
+                hintText: 'Nach Namen suchen',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(30.0)), // Runde Ecken
                   borderSide: BorderSide.none, // Kein Rand
