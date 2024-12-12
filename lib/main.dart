@@ -64,6 +64,12 @@ child: const Text('Speichern', style: TextStyle(color: Colors.white)),
             Navigator.of(context).pop();
           },
         ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text('Abbrechen'),
+        ),
       ],
     );
   }
@@ -257,6 +263,12 @@ void _editName(int index) {
                 }
               }
             },
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Abbrechen'),
           ),
         ],
       );
@@ -466,6 +478,12 @@ child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
                   }
                 }
               },
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Abbrechen'),
             ),
           ],
         );
