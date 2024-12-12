@@ -148,23 +148,119 @@ class _TimeListScreenState extends State<TimeListScreen> {
 void _editName(int index) {
   showDialog(
     context: context,
-    builder: (context) => EditNameDialog(
-      initialName: _filteredTimes[index].name,
-      onNameChanged: (newName) {
-        setState(() {
-          _filteredTimes[index].name = newName;
-          _sortTimes();
-          int originalIndex = _times.indexWhere((entry) =>
-              entry.time == _filteredTimes[index].time &&
-              entry.date == _filteredTimes[index].date);
-          if (originalIndex != -1) {
-            _times[originalIndex].name = newName;
-          }
-        });
-        _saveTimes();
-     },
-   ),
- );
+    builder: (context) {
+      TextEditingController timeController = TextEditingController(text: _filteredTimes[index].time);
+      TextEditingController dateController = TextEditingController(text: _filteredTimes[index].date);
+      TextEditingController nameController = TextEditingController(text: _filteredTimes[index].name);
+
+      bool isTimeValid = true;
+      bool isDateValid = true;
+
+      return AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text('Eintrag bearbeiten'),
+        content: StatefulBuilder(builder: (context, setState) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: timeController,
+                decoration: InputDecoration(
+                  hintText: 'HH:mm:ss.SSS',
+                  errorText: isTimeValid ? null : 'Invalid time format',
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(
+                        color: isTimeValid ? Colors.grey : Colors.red),
+                  ),
+                ),
+                keyboardType: TextInputType.datetime,
+                onChanged: (value) {
+                  setState(() {
+                    try {
+                      DateFormat('HH:mm:ss.SSS').parseStrict(value);
+                      isTimeValid = true;
+                    } catch (e) {
+                      isTimeValid = false;
+                    }
+                  });
+                },
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: dateController,
+                decoration: InputDecoration(
+                  hintText: 'dd.MM.yyyy HH:mm',
+                  errorText: isDateValid ? null : 'Invalid date format',
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(
+                        color: isDateValid ? Colors.grey : Colors.red),
+                  ),
+                ),
+                keyboardType: TextInputType.datetime,
+                onChanged: (value) {
+                  setState(() {
+                    try {
+                      DateFormat('dd.MM.yyyy HH:mm').parseStrict(value);
+                      isDateValid = true;
+                    } catch (e) {
+                      isDateValid = false;
+                    }
+                  });
+                },
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(hintText: 'Name'),
+              ),
+            ],
+          );
+        }),
+        actions: [
+          ElevatedButton(
+            child: const Text('Speichern', style: TextStyle(color: Colors.white)),
+            onPressed: () {
+              if (isTimeValid && isDateValid) {
+                String time = timeController.text.trim();
+                String date = dateController.text.trim();
+                String name = nameController.text.trim();
+
+                try {
+                  DateFormat('HH:mm:ss.SSS').parseStrict(time);
+                  DateFormat('dd.MM.yyyy HH:mm').parseStrict(date);
+
+                  setState(() {
+                    
+                    _filteredTimes[index].time = time;
+                    _filteredTimes[index].date = date;
+                    _filteredTimes[index].name = name;
+                    _filteredTimes[index].timeInMillis =
+                        DateFormat('HH:mm:ss.SSS')
+                            .parse(time)
+                            .millisecondsSinceEpoch;
+
+                    _sortTimes();
+
+                    int originalIndex = _times.indexWhere((entry) =>
+                        entry.time ==
+                            _filteredTimes[index].time &&
+                        entry.date ==
+                            _filteredTimes[index].date);
+                    if (originalIndex != -1) {
+                      _times[originalIndex] = _filteredTimes[index];
+                    }
+                  });
+                  _saveTimes();
+                  Navigator.of(context).pop();
+                } catch (e) {
+                  // Handle validation errors
+                }
+              }
+            },
+          ),
+        ],
+      );
+    });
 }
 
   @override
