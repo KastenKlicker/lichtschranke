@@ -1,8 +1,12 @@
 
 import 'dart:convert';
+import 'dart:ffi';
+import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:bluetooth_classic/bluetooth_classic.dart';
+import 'package:bluetooth_classic/models/device.dart';
 
 class TimeEntry {
 
@@ -81,7 +85,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
   List<TimeEntry> _times = [];
   List<TimeEntry> _filteredTimes = [];
   String _currentSearchQuery = '';
-  // Dummy method to simulate receiving times over Bluetooth
+  final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
 
 void _editName(int index) {
   showDialog(
@@ -109,7 +113,49 @@ void _editName(int index) {
     super.initState();
     _addTestData();
     _filteredTimes = List.from(_times)..sort((a, b) => b.time.compareTo(a.time));
+    _initializeBluetooth();
 
+  }
+
+  Future<void> _initializeBluetooth() async {
+    // Zugriff auf Bluetooth-Erlaubnis
+    await _bluetoothClassicPlugin.initPermissions();
+    // Verbindung mit dem Bluetooth-Gerät herstellen
+    
+    // Lichtschranke mit Name finden
+    List<Device> deviceList = await _bluetoothClassicPlugin.getPairedDevices();
+    
+    for (Device device in deviceList)
+      print(device.name);
+    
+    Device lichtschranke = await deviceList.where((device) => device.name == "Lichtschranke").first;
+    
+    print("Adresse Lichtschranke: " + lichtschranke.address);
+    
+    await _bluetoothClassicPlugin.connect(lichtschranke.address, "00001101-0000-1000-8000-00805f9b34fb");
+
+    // Daten-Event abonnieren
+    _bluetoothClassicPlugin.onDeviceDataReceived().listen((event) {
+      _handleData(event);
+    });
+  }
+
+  void _handleData(Uint8List event) {
+    setState(() {
+      String timeInMillisStr = String.fromCharCodes(event).substring(0, 7);
+      int timeInMillis = int.parse(timeInMillisStr);
+      DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timeInMillis, isUtc:true);
+
+      String formattedTime = DateFormat('HH:mm:ss.SSS').format(dateTime);
+
+      // Fügen Sie den empfangenen Zeitstempel zur Liste hinzu
+      _times.add(TimeEntry(time: formattedTime, date: DateFormat('dd.MM.yyyy').format(DateTime.now())));
+
+      _filteredTimes = List.from(_times);
+    });
+
+    // Zum Speichern der neuen Einträge aufrufen
+    _saveTimes();
   }
 
   void _addTestData() {
