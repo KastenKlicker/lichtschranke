@@ -1,6 +1,5 @@
 
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
@@ -83,7 +82,20 @@ class TimeListScreen extends StatefulWidget {
 
 class _TimeListScreenState extends State<TimeListScreen> {
   List<TimeEntry> _times = [];
+  bool _isDuplicate(TimeEntry timeEntry) {
+    return _times.any((entry) =>
+        entry.time == timeEntry.time &&
+        entry.date == timeEntry.date &&
+        entry.name == timeEntry.name);
+  }
   List<TimeEntry> _filteredTimes = [];
+  void _sortTimes() {
+    _times.sort((a, b) {
+      final dateComparison = b.date.compareTo(a.date);
+      return dateComparison != 0 ? dateComparison : b.time.compareTo(a.time);
+    });
+    _filteredTimes = List.from(_times);
+  }
   String _currentSearchQuery = '';
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
 
@@ -95,6 +107,7 @@ void _editName(int index) {
       onNameChanged: (newName) {
         setState(() {
           _filteredTimes[index].name = newName;
+          _sortTimes();
           int originalIndex = _times.indexWhere((entry) =>
               entry.time == _filteredTimes[index].time &&
               entry.date == _filteredTimes[index].date);
@@ -111,10 +124,9 @@ void _editName(int index) {
   @override
   void initState() {
     super.initState();
-    _addTestData();
-    _filteredTimes = List.from(_times)..sort((a, b) => b.time.compareTo(a.time));
+    _loadTimes();
+    _sortTimes();
     _initializeBluetooth();
-
   }
 
   Future<void> _initializeBluetooth() async {
@@ -144,33 +156,22 @@ void _editName(int index) {
     setState(() {
       String timeInMillisStr = String.fromCharCodes(event).substring(0, 7);
       int timeInMillis = int.parse(timeInMillisStr);
-      DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timeInMillis, isUtc:true);
+      DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timeInMillis, isUtc: true);
 
       String formattedTime = DateFormat('HH:mm:ss.SSS').format(dateTime);
+      TimeEntry newEntry = TimeEntry(time: formattedTime, date: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
+      if (_isDuplicate(newEntry)) return;
 
       // Fügen Sie den empfangenen Zeitstempel zur Liste hinzu
-      _times.add(TimeEntry(time: formattedTime, date: DateFormat('dd.MM.yyyy').format(DateTime.now())));
+      _times.add(newEntry);
+      
+      _sortTimes();
 
       _filteredTimes = List.from(_times);
     });
 
     // Zum Speichern der neuen Einträge aufrufen
     _saveTimes();
-  }
-
-  void _addTestData() {
-    List<String> names = [ 
-      'Big Chungus',
-      'Big Chungus',
-      'Quick Chungus',
-      'Quick Chungus',
-      'Quick Chungus',
-      'Sick Chungus'
-    ];
-    names.shuffle();
-    for (var name in names) {
-      _times.add(TimeEntry(time: DateFormat('HH:mm:ss.SSS').format(DateTime.now()), date: DateFormat('dd.MM.yyyy').format(DateTime.now()), name: name));
-    }
   }
 
   // Load times from SharedPreferences
@@ -182,6 +183,8 @@ void _editName(int index) {
         _times = timeStringList
             .map((timeString) => TimeEntry.fromMap(Map<String, String>.from(json.decode(timeString)))) // Ensure updated format
             .toList();
+        _sortTimes();
+        _filteredTimes = List.from(_times)..sort((a, b) => b.time.compareTo(a.time));
       });
     }
   }
@@ -189,8 +192,17 @@ void _editName(int index) {
   // Save times to SharedPreferences
   _saveTimes() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-        'times', _times.map((entry) => json.encode(entry.toMap())).toList());
+
+    // Nur Zeiten mit Namen speichern
+    List<TimeEntry> timesWithName = _times.where((entry) => entry.name.trim().isNotEmpty).toList();
+
+    // Zeiten serialisieren und speichern
+    List<String> encodedTimes = timesWithName.map((entry) => json.encode(entry.toMap())).toList();
+
+    // Debugging-Ausgabe optional
+    debugPrint("Speichere Zeiten mit Namen: $encodedTimes");
+
+    await prefs.setStringList('times', encodedTimes);
   }
 
   // Add a new time
@@ -214,15 +226,18 @@ void _editName(int index) {
 
   // Add a new time
   void _addTime() async {
-    final newTimeEntry = TimeEntry(time: DateFormat('HH:mm:ss.SSS').format(DateTime.now()), date: DateFormat('dd.MM.yyyy').format(DateTime.now()));
+    final newTimeEntry = TimeEntry(time: DateFormat('HH:mm:ss.SSS').format(DateTime.now()), date: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
+    if (_isDuplicate(newTimeEntry)) return;
     setState(() {
       _times.add(newTimeEntry);
+      _sortTimes();
     });
     _saveTimes();
   }
 
   void _filterTimes(String query) {
-    if (query.isEmpty) {
+  void _filterTimes(String query) {
+    _sortTimes();
       setState(() {
         _filteredTimes = List.from(_times);
       });
