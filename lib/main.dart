@@ -49,7 +49,8 @@ class EditNameDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     TextEditingController controller = TextEditingController(text: initialName);
 
-    return AlertDialog(
+return AlertDialog(
+  backgroundColor: Colors.white,
       title: const Text('Namen ändern'),
       content: TextField(
         controller: controller,
@@ -269,7 +270,8 @@ void _editName(int index) {
         bool isTimeValid = true;
         bool isDateValid = true;
 
-        return AlertDialog(
+return AlertDialog(
+  backgroundColor: Colors.white,
           title: const Text('Neue Zeit'),
           content: StatefulBuilder(builder: (context, setState) {
             return Column(
