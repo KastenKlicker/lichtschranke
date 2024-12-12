@@ -12,16 +12,26 @@ class TimeEntry {
   String time; // Reference modification to include milliseconds
   String date; // Added field for date
   String name;
+  int timeInMillis;
 
-  TimeEntry({required this.time, required this.date, this.name = ''}); // Ensure usage of updated format
+  TimeEntry({required this.time, required this.date, required this.timeInMillis, this.name = ''}); // Ensure usage of updated format
 
-  Map<String, String> toMap() { // Ensure time format includes milliseconds
-    return {'time': time, 'date': date, 'name': name};
+  Map<String, String> toMap() {
+    return {
+      'time': time,
+      'date': date,
+      'name': name,
+      'timeInMillis': timeInMillis.toString(), // Sicherstellen, dass this auch bei Speicherung bleibt
+    };
   }
 
   static TimeEntry fromMap(Map<String, String> map) {
-    return TimeEntry(time: map['time']!, date: map['date']!, name: map['name'] ?? ''); // Ensure updated format
-
+    return TimeEntry(
+      time: map['time']!,
+      date: map['date']!,
+      name: map['name'] ?? '',
+      timeInMillis: int.parse(map['timeInMillis']!), // timeInMillis hinzugefügt und von String konvertiert
+    );
   }
 }
 
@@ -137,9 +147,6 @@ void _editName(int index) {
     // Lichtschranke mit Name finden
     List<Device> deviceList = await _bluetoothClassicPlugin.getPairedDevices();
     
-    for (Device device in deviceList)
-      print(device.name);
-    
     Device lichtschranke = await deviceList.where((device) => device.name == "Lichtschranke").first;
     
     print("Adresse Lichtschranke: " + lichtschranke.address);
@@ -152,6 +159,14 @@ void _editName(int index) {
     });
   }
 
+  bool _isLessThan500ms(TimeEntry newEntry) {
+    return _times.any((entry) {
+      if (entry.date != newEntry.date) return false;
+      int difference = newEntry.timeInMillis - entry.timeInMillis;
+      return difference < 500;
+    });
+  }
+
   void _handleData(Uint8List event) {
     setState(() {
       String timeInMillisStr = String.fromCharCodes(event).substring(0, 7);
@@ -159,8 +174,12 @@ void _editName(int index) {
       DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timeInMillis, isUtc: true);
 
       String formattedTime = DateFormat('HH:mm:ss.SSS').format(dateTime);
-      TimeEntry newEntry = TimeEntry(time: formattedTime, date: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
-      if (_isDuplicate(newEntry)) return;
+      TimeEntry newEntry = TimeEntry(
+          time: formattedTime,
+          timeInMillis: timeInMillis,
+          date: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
+      
+      if (_isDuplicate(newEntry) || _isLessThan500ms(newEntry)) return;
 
       // Fügen Sie den empfangenen Zeitstempel zur Liste hinzu
       _times.add(newEntry);
@@ -199,9 +218,6 @@ void _editName(int index) {
     // Zeiten serialisieren und speichern
     List<String> encodedTimes = timesWithName.map((entry) => json.encode(entry.toMap())).toList();
 
-    // Debugging-Ausgabe optional
-    debugPrint("Speichere Zeiten mit Namen: $encodedTimes");
-
     await prefs.setStringList('times', encodedTimes);
   }
 
@@ -224,25 +240,7 @@ void _editName(int index) {
     _saveTimes();
   }
 
-  // Add a new time
-  void _addTime() async {
-    final newTimeEntry = TimeEntry(time: DateFormat('HH:mm:ss.SSS').format(DateTime.now()), date: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
-    if (_isDuplicate(newTimeEntry)) return;
-    setState(() {
-      _times.add(newTimeEntry);
-      _sortTimes();
-    });
-    _saveTimes();
-  }
-
   void _filterTimes(String query) {
-  void _filterTimes(String query) {
-    _sortTimes();
-      setState(() {
-        _filteredTimes = List.from(_times);
-      });
-      return;
-    }
     List<TimeEntry> filteredTimes = _times.where((entry) => entry.name.toLowerCase().contains(query.toLowerCase())).toList();
     setState(() {
       _filteredTimes = filteredTimes;
