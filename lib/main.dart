@@ -169,7 +169,7 @@ void _editName(int index) {
 
   void _handleData(Uint8List event) {
     setState(() {
-      String timeInMillisStr = String.fromCharCodes(event).substring(0, 7);
+      String timeInMillisStr = String.fromCharCodes(event).trim();
       int timeInMillis = int.parse(timeInMillisStr);
       DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timeInMillis, isUtc: true);
 
