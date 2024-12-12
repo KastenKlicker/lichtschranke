@@ -50,14 +50,14 @@ class EditNameDialog extends StatelessWidget {
     TextEditingController controller = TextEditingController(text: initialName);
 
     return AlertDialog(
-      title: const Text('Edit Name'),
+      title: const Text('Namen ändern'),
       content: TextField(
         controller: controller,
-        decoration: const InputDecoration(hintText: 'Enter name'),
+        decoration: const InputDecoration(hintText: 'Name'),
       ),
       actions: [
         ElevatedButton(
-          child: const Text('Save'),
+child: const Text('Speichern', style: TextStyle(color: Colors.white)),
           onPressed: () {
             onNameChanged(controller.text);
             Navigator.of(context).pop();
@@ -70,12 +70,37 @@ class EditNameDialog extends StatelessWidget {
 
 ThemeData appTheme = ThemeData(
   primarySwatch: Colors.orange,
+  appBarTheme: AppBarTheme(
+    backgroundColor: Colors.white,
+    foregroundColor: Colors.white,
+  ),
   inputDecorationTheme: InputDecorationTheme(
+    focusedBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.orange, width: 1.5),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.orange, width: 1.0),
+    ),
     errorBorder: OutlineInputBorder(
       borderSide: BorderSide(color: Colors.red, width: 1.5),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderSide: BorderSide(color: Colors.red, width: 2),
+    ),
+  ),
+  floatingActionButtonTheme: FloatingActionButtonThemeData(
+    backgroundColor: Colors.orange,
+    foregroundColor: Colors.white,
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ButtonStyle(
+      backgroundColor: WidgetStateProperty.all<Color>(Colors.orange),
+      foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
+    ),
+  ),
+  textButtonTheme: TextButtonThemeData(
+    style: ButtonStyle(
+      foregroundColor: WidgetStateProperty.all<Color>(Colors.orange),
     ),
   ),
 );
@@ -245,7 +270,7 @@ void _editName(int index) {
         bool isDateValid = true;
 
         return AlertDialog(
-          title: const Text('Add New Time Entry'),
+          title: const Text('Neue Zeit'),
           content: StatefulBuilder(builder: (context, setState) {
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -298,14 +323,14 @@ void _editName(int index) {
                 const SizedBox(height: 10),
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(hintText: 'Enter name'),
+                  decoration: const InputDecoration(hintText: 'Name'),
                 ),
               ],
             );
           }),
           actions: [
             ElevatedButton(
-              child: const Text('Add'),
+child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
               onPressed: () {
                 if (isTimeValid && isDateValid) {
                   String time = timeController.text.trim();
@@ -377,20 +402,34 @@ void _editName(int index) {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: TextField(
-            decoration: const InputDecoration(
-              hintText: 'Search by name',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(30.0)),
-                borderSide: BorderSide.none,
+          child: Material(
+            elevation: 2,
+            borderRadius: BorderRadius.circular(30.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search by name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(30.0)), // Runde Ecken
+                  borderSide: BorderSide.none, // Kein Rand
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                  borderSide: BorderSide.none, // Kein Rand bei Fokus
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                  borderSide: BorderSide.none, // Kein Rand wenn aktiviert
+                ),
+                prefixIcon: Icon(Icons.search, color: Colors.orange),
+                filled: true,
+                fillColor: Colors.white, // Weißer Hintergrund
+                contentPadding: EdgeInsets.symmetric(vertical: 14.0),
               ),
-              prefixIcon: Icon(Icons.search),
-              filled: true,
-            ),
-            onChanged: (value) {
+              onChanged: (value) {
               setState(() {
                 _currentSearchQuery = value;
               });
@@ -400,12 +439,15 @@ void _editName(int index) {
         ),
 
 
+      )
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTimeDialog,
         child: const Icon(Icons.add),
       ),
-      body: ListView.builder(
+      body: Container(
+        color: Colors.white,
+        child: ListView.builder(
         itemCount: _filteredTimes.length,
         itemBuilder: (context, index) {
           final entry = _filteredTimes[index];
@@ -432,6 +474,7 @@ void _editName(int index) {
             ),
           );
         },
+        ),
       ),
     );
   }
