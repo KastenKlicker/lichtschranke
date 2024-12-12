@@ -68,6 +68,18 @@ class EditNameDialog extends StatelessWidget {
   }
 }
 
+ThemeData appTheme = ThemeData(
+  primarySwatch: Colors.orange,
+  inputDecorationTheme: InputDecorationTheme(
+    errorBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.red, width: 1.5),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: Colors.red, width: 2),
+    ),
+  ),
+);
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -75,9 +87,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Time List App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: appTheme,
       home: TimeListScreen(),
     );
   }
@@ -222,6 +232,123 @@ void _editName(int index) {
   }
 
   // Add a new time
+  void _showAddTimeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        TextEditingController timeController = TextEditingController();
+        TextEditingController dateController = TextEditingController(
+            text: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
+        TextEditingController nameController = TextEditingController();
+
+        bool isTimeValid = true;
+        bool isDateValid = true;
+
+        return AlertDialog(
+          title: const Text('Add New Time Entry'),
+          content: StatefulBuilder(builder: (context, setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: timeController,
+                  decoration: InputDecoration(
+                    hintText: 'HH:mm:ss.SSS',
+                    errorText: isTimeValid ? null : 'Invalid time format',
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(
+                          color: isTimeValid ? Colors.grey : Colors.red),
+                    ),
+                  ),
+                  keyboardType: TextInputType.datetime,
+                  onChanged: (value) {
+                    setState(() {
+                      try {
+                        DateFormat('HH:mm:ss.SSS').parseStrict(value);
+                        isTimeValid = true;
+                      } catch (e) {
+                        isTimeValid = false;
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: dateController,
+                  decoration: InputDecoration(
+                    hintText: 'dd.MM.yyyy HH:mm',
+                    errorText: isDateValid ? null : 'Invalid date format',
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(
+                          color: isDateValid ? Colors.grey : Colors.red),
+                    ),
+                  ),
+                  keyboardType: TextInputType.datetime,
+                  onChanged: (value) {
+                    setState(() {
+                      try {
+                        DateFormat('dd.MM.yyyy HH:mm').parseStrict(value);
+                        isDateValid = true;
+                      } catch (e) {
+                        isDateValid = false;
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(hintText: 'Enter name'),
+                ),
+              ],
+            );
+          }),
+          actions: [
+            ElevatedButton(
+              child: const Text('Add'),
+              onPressed: () {
+                if (isTimeValid && isDateValid) {
+                  String time = timeController.text.trim();
+                  String date = dateController.text.trim();
+                  String name = nameController.text.trim();
+
+                  try {
+                    DateFormat('HH:mm:ss.SSS').parseStrict(time);
+                    DateFormat('dd.MM.yyyy HH:mm').parseStrict(date);
+
+                    int timeInMillis = DateFormat('HH:mm:ss.SSS')
+                        .parse(time)
+                        .millisecondsSinceEpoch;
+
+                    TimeEntry newEntry = TimeEntry(
+                        time: time,
+                        date: date,
+                        name: name,
+                        timeInMillis: timeInMillis);
+
+                    if (_isDuplicate(newEntry)) {
+                      return;
+                    }
+
+                    setState(() {
+                      _times.add(newEntry);
+                      _sortTimes();
+                      _filteredTimes = List.from(_times);
+                    });
+
+                    _saveTimes();
+                    Navigator.of(context).pop();
+                  } catch (e) {
+                    // Fehler wird automatisch durch die Ränder des Textfelds angezeigt
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
   // Delete a time entry
   void _deleteTime(int index) async {
     setState(() {
@@ -273,7 +400,10 @@ void _editName(int index) {
         ),
 
 
-        // Remove this line
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddTimeDialog,
+        child: const Icon(Icons.add),
       ),
       body: ListView.builder(
         itemCount: _filteredTimes.length,
