@@ -39,42 +39,6 @@ void main() {
   runApp(const MyApp());
 }
 
-class EditNameDialog extends StatelessWidget {
-  final String initialName;
-  final ValueChanged<String> onNameChanged;
-
-  const EditNameDialog({super.key, required this.initialName, required this.onNameChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    TextEditingController controller = TextEditingController(text: initialName);
-
-return AlertDialog(
-  backgroundColor: Colors.white,
-      title: const Text('Namen ändern'),
-      content: TextField(
-        controller: controller,
-        decoration: const InputDecoration(hintText: 'Name'),
-      ),
-      actions: [
-        ElevatedButton(
-child: const Text('Speichern', style: TextStyle(color: Colors.white)),
-          onPressed: () {
-            onNameChanged(controller.text);
-            Navigator.of(context).pop();
-          },
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: const Text('Abbrechen'),
-        ),
-      ],
-    );
-  }
-}
-
 ThemeData appTheme = ThemeData(
   primarySwatch: Colors.orange,
   appBarTheme: AppBarTheme(
@@ -150,7 +114,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
   }
   String _currentSearchQuery = '';
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
-
+  
 void _editName(int index) {
   showDialog(
     context: context,
@@ -364,7 +328,7 @@ void _editName(int index) {
 
     await prefs.setStringList('times', encodedTimes);
   }
-
+  
   // Add a new time
   void _showAddTimeDialog() {
     showDialog(
