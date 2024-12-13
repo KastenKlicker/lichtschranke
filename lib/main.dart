@@ -454,6 +454,28 @@ child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
       },
     );
   }
+  // Show a dialog for menu options
+  void _showMenuDialog(String option) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white, // Updated background to white
+          title: Text(option),
+          content: Text('You selected the $option option.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // Delete a time entry
   void _deleteTime(int index) async {
     setState(() {
@@ -484,6 +506,25 @@ child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: Colors.orange), // Changed to three vertical points icon in orange
+            onSelected: (String value) {
+              _showMenuDialog(value);
+            },
+            itemBuilder: (BuildContext context) {
+              return ['Zeitraum', 'Import', 'Export'].map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice),
+                  // TODO Hintergrund weiß machen
+                  // TODO Suchleiste anpassen
+                  // TODO Implementation
+                );
+              }).toList();
+            },
+          ),
+        ],
         title: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Material(
