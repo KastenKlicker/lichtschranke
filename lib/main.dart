@@ -454,6 +454,33 @@ child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
       },
     );
   }
+
+  void _filterByDateRange(DateTimeRange dateRange) {
+    List<TimeEntry> filteredTimes = _times.where((entry) {
+      DateTime entryDate = DateFormat('dd.MM.yyyy HH:mm').parse('${entry.date} ${entry.time}');
+      return entryDate.isAfter(dateRange.start) && entryDate.isBefore(dateRange.end);
+    }).toList();
+    setState(() {
+      _filteredTimes = filteredTimes;
+    });
+  }
+
+  // Show a dialog to filter based on date range
+  Future<void> _selectDateRange() async {
+  
+  DateTime today = DateTime.now();
+
+    DateTimeRange? dateTimeRange = await showDateRangePicker(context: context,
+        firstDate: DateTime(2024), 
+        lastDate: DateTime(2100),
+        initialDateRange: DateTimeRange(
+            start: today.subtract(Duration(days: today.weekday -1)), // Get Week start
+            end: today)
+    );
+    
+    _filterByDateRange(dateTimeRange!);
+    
+  }
   // Show a dialog for menu options
   void _showMenuDialog(String option) {
     showDialog(
@@ -500,7 +527,7 @@ child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
       _filteredTimes = filteredTimes;
     });
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -510,7 +537,11 @@ child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: Colors.orange), // Changed to three vertical points icon in orange
             onSelected: (String value) {
-              _showMenuDialog(value);
+              if (value == 'Zeitraum') {
+                _selectDateRange();
+              } else {
+                _showMenuDialog(value);
+              }
             },
             itemBuilder: (BuildContext context) {
               return ['Zeitraum', 'Import', 'Export'].map((String choice) {
