@@ -41,11 +41,16 @@ void main() {
 
 ThemeData appTheme = ThemeData(
   primarySwatch: Colors.orange,
+  colorScheme: ColorScheme.light(
+    primary: Colors.orange
+  ),
+  
   appBarTheme: AppBarTheme(
     backgroundColor: Colors.white,
-    foregroundColor: Colors.white,
+    foregroundColor: Colors.orange,
   ),
   inputDecorationTheme: InputDecorationTheme(
+    
     focusedBorder: OutlineInputBorder(
       borderSide: BorderSide(color: Colors.orange, width: 1.5),
     ),
@@ -73,6 +78,24 @@ ThemeData appTheme = ThemeData(
     style: ButtonStyle(
       foregroundColor: WidgetStateProperty.all<Color>(Colors.orange),
     ),
+  ),
+  datePickerTheme: DatePickerThemeData(
+    backgroundColor: Colors.white,
+    rangePickerBackgroundColor: Colors.white,
+    rangePickerHeaderBackgroundColor: Colors.orange,
+    rangePickerHeaderForegroundColor: Colors.white,
+    rangeSelectionBackgroundColor: Colors.orange[100],
+    rangePickerShadowColor: Colors.orange,
+    dividerColor: Colors.red
+  ),
+  textTheme: TextTheme(
+    bodyLarge: TextStyle(color: Colors.black), // Standard Texte auf Schwarz für Lesbarkeit
+    bodyMedium: TextStyle(color: Colors.black87), // Abgeschwächter Standardtext
+  ),
+  textSelectionTheme: TextSelectionThemeData(
+    cursorColor: Colors.orange, // Cursorfarbe beim Eingeben von Text
+    selectionColor: Colors.orange[300], // Markierungsfarbe für ausgewählten Text
+    selectionHandleColor: Colors.orange, // Farbe der Markierungshandles (z.B. bei Dragging)
   ),
 );
 
@@ -404,7 +427,7 @@ return AlertDialog(
           }),
           actions: [
             ElevatedButton(
-child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
+              child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
               onPressed: () {
                 if (isTimeValid && isDateValid) {
                   String time = timeController.text.trim();
@@ -470,12 +493,20 @@ child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
   
   DateTime today = DateTime.now();
 
-    DateTimeRange? dateTimeRange = await showDateRangePicker(context: context,
+    DateTimeRange? dateTimeRange = await showDateRangePicker(
+        context: context,
         firstDate: DateTime(2024), 
         lastDate: DateTime(2100),
         initialDateRange: DateTimeRange(
             start: today.subtract(Duration(days: today.weekday -1)), // Get Week start
-            end: today)
+            end: today),
+        /*builder: (context, child) => Theme(
+            data: ThemeData().copyWith(
+              colorScheme: ColorScheme.light(
+                primary: Colors.orange
+              )
+            ),
+            child: child!)*/
     );
     
     _filterByDateRange(dateTimeRange!);
