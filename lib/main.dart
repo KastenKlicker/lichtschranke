@@ -564,66 +564,73 @@ return AlertDialog(
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        actions: [
-          PopupMenuButton<String>(
-            color: Colors.white,
-            icon: Icon(Icons.more_vert, color: Colors.orange), // Changed to three vertical points icon in orange
-            onSelected: (String value) {
-              if (value == 'Zeitraum') {
-                _selectDateRange();
-              } else {
-                _showMenuDialog(value);
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              return ['Zeitraum', 'Import', 'Export'].map((String choice) {
-                return PopupMenuItem<String>(
-                  value: choice,
-                  child: Text(choice),
-                  // TODO Hintergrund weiß machen
-                  // TODO Suchleiste anpassen
-                  // TODO Implementation
-                );
-              }).toList();
-            },
-          ),
-        ],
-        title: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Material(
-            elevation: 2,
-            borderRadius: BorderRadius.circular(30.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Nach Namen suchen',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(30.0)), // Runde Ecken
-                  borderSide: BorderSide.none, // Kein Rand
+        title: Stack(
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 46.0),
+                child: Material(
+                  elevation: 2,
+                  borderRadius: BorderRadius.circular(30.0),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Nach Namen suchen',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30.0)), // Runde Ecken
+                        borderSide: BorderSide.none, // Kein Rand
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                        borderSide: BorderSide.none, // Kein Rand bei Fokus
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30.0)),
+                        borderSide: BorderSide.none, // Kein Rand wenn aktiviert
+                      ),
+                      prefixIcon: Icon(Icons.search, color: Colors.orange),
+                      filled: true,
+                      fillColor: Colors.white, // Weißer Hintergrund
+                      contentPadding: EdgeInsets.symmetric(vertical: 14.0),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _currentSearchQuery = value;
+                      });
+                      _filterTimes(value);
+                    },
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(30.0)),
-                  borderSide: BorderSide.none, // Kein Rand bei Fokus
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(30.0)),
-                  borderSide: BorderSide.none, // Kein Rand wenn aktiviert
-                ),
-                prefixIcon: Icon(Icons.search, color: Colors.orange),
-                filled: true,
-                fillColor: Colors.white, // Weißer Hintergrund
-                contentPadding: EdgeInsets.symmetric(vertical: 14.0),
               ),
-              onChanged: (value) {
-              setState(() {
-                _currentSearchQuery = value;
-              });
-              _filterTimes(value);
-            },
-          ),
-        ),
-
-
-      )
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 0),
+                child: PopupMenuButton<String>(
+                  color: Colors.white,
+                  icon: Icon(Icons.more_vert, color: Colors.orange), // Changed to three vertical points icon in orange
+                  onSelected: (String value) {
+                    if (value == 'Zeitraum') {
+                      _selectDateRange();
+                    } else {
+                      _showMenuDialog(value);
+                    }
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return ['Zeitraum', 'Import', 'Export'].map((String choice) {
+                      return PopupMenuItem<String>(
+                        value: choice,
+                        child: Text(choice),
+                        // TODO Implementation 1/3
+                      );
+                    }).toList();
+                  },
+                ),
+              ),
+            ),
+          ],
+        )
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTimeDialog,
