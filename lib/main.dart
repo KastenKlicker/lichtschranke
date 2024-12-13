@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bluetooth_classic/bluetooth_classic.dart';
 import 'package:bluetooth_classic/models/device.dart';
+import 'dart:io';
+import 'package:csv/csv.dart';
+import 'package:file_picker/file_picker.dart';
 
 class TimeEntry {
 
@@ -519,8 +522,7 @@ return AlertDialog(
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white, // Updated background to white
-          title: Text(option),
-          content: Text('You selected the $option option.'),
+          title: Text(option, style: TextStyle(fontSize: 14)),
           actions: [
             TextButton(
               onPressed: () {
@@ -557,6 +559,79 @@ return AlertDialog(
     setState(() {
       _filteredTimes = filteredTimes;
     });
+  }
+
+  Future<void> _exportFilteredTimesToCSV() async {
+  try {
+    TextEditingController fileNameController = TextEditingController(text: 'lichtschranke_export.csv');
+    
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Dateiname auswählen'),
+          content: TextField(
+            controller: fileNameController,
+            decoration: const InputDecoration(
+              hintText: 'Gib den Dateinamen ein',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              child: const Text('Speichern', style: TextStyle(color: Colors.white)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+    
+      // Erstelle den CSV-Inhalt aus den gefilterten Zeiten (_filteredTimes)
+      String? selectedDirectory = await _selectExportDirectory();
+      if (selectedDirectory == null) return; // Abbruch, falls Benutzer nichts auswählt
+      List<List<String>> rows = [
+        ["Name", "Datum", "Uhrzeit"] // Kopfzeile
+      ];
+
+      for (var entry in _filteredTimes) {
+        rows.add([entry.name, entry.date, entry.time]);
+      }
+
+      // Konvertiere die Liste in CSV-Format
+      String csv = const ListToCsvConverter().convert(rows);
+
+      // Speichere die Datei im Downloads-Ordner
+      String fileName = fileNameController.text.trim();
+      if (fileName.isEmpty) fileName = 'lichtschranke_export.csv';
+      final file = File('$selectedDirectory/$fileName');
+      await file.writeAsString(csv);
+
+      // Erfolgsmeldung anzeigen
+      _showMenuDialog('Datei wurde unter: ${file.path} gespeichert');
+    } catch (e) {
+      // Fehlerbehandlung
+      _showMenuDialog('Export fehlgeschlagen: $e');
+    }
+  }
+
+  Future<String?> _selectExportDirectory() async {
+    Directory downloadsDirectory = Directory('~/Downloads');
+    String initialDirectoryPath = downloadsDirectory.path;
+
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Wähle einen Ordner für den Export',
+      initialDirectory: initialDirectoryPath,
+    );
+
+    return selectedDirectory;
   }
   
   @override
@@ -613,6 +688,8 @@ return AlertDialog(
                   onSelected: (String value) {
                     if (value == 'Zeitraum') {
                       _selectDateRange();
+                    } else if (value == 'Export') {
+                      _exportFilteredTimesToCSV();
                     } else {
                       _showMenuDialog(value);
                     }
@@ -623,6 +700,7 @@ return AlertDialog(
                         value: choice,
                         child: Text(choice),
                         // TODO Implementation 1/3
+                        // TODO Fix Bluetooth freeze
                       );
                     }).toList();
                   },

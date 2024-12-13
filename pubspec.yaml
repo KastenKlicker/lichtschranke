@@ -37,6 +37,8 @@ dev_dependencies:
   shared_preferences: ^2.3.3
   intl: ^0.20.1
   bluetooth_classic: ^0.0.2
+  file_picker: 8.1.4
+  csv: ^6.0.0
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
