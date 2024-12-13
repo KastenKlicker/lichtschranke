@@ -53,7 +53,6 @@ ThemeData appTheme = ThemeData(
     foregroundColor: Colors.orange,
   ),
   inputDecorationTheme: InputDecorationTheme(
-    
     focusedBorder: OutlineInputBorder(
       borderSide: BorderSide(color: Colors.orange, width: 1.5),
     ),
@@ -615,7 +614,7 @@ return AlertDialog(
       await file.writeAsString(csv);
 
       // Erfolgsmeldung anzeigen
-      _showMenuDialog('Datei wurde unter: ${file.path} gespeichert');
+      _showMenuDialog('Datei wurde unter: ${file.path} gespeichert.');
     } catch (e) {
       // Fehlerbehandlung
       _showMenuDialog('Export fehlgeschlagen: $e');
@@ -632,6 +631,48 @@ return AlertDialog(
     );
 
     return selectedDirectory;
+  }
+  
+  Future<void> _importCSV() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+      );
+      if (result != null && result.files.single.path != null) {
+        String filePath = result.files.single.path!;
+        final file = File(filePath);
+        String csvContent = await file.readAsString();
+        List<List<dynamic>> csvRows = const CsvToListConverter().convert(csvContent);
+
+        List<TimeEntry> importedTimes = [];
+        for (var row in csvRows.skip(1)) { // Skip header row
+          if (row.length >= 3) {
+            TimeEntry mightBeAdded = TimeEntry(
+              name: row[0].toString(),
+              date: row[1].toString(),
+              time: row[2].toString(),
+              timeInMillis: DateFormat('HH:mm:ss.SSS').parse(row[2]).millisecondsSinceEpoch,
+            );
+            if(!_isDuplicate(mightBeAdded))
+              importedTimes.add(mightBeAdded);
+          }
+        }
+
+        setState(() {
+          _times.addAll(importedTimes);
+          _sortTimes();
+          _filteredTimes = List.from(_times);
+        });
+
+        _saveTimes();
+        _showMenuDialog('CSV-Import erfolgreich abgeschlossen.');
+      } else {
+        _showMenuDialog('Kein Datei ausgewählt.');
+      }
+    } catch (e) {
+      _showMenuDialog('Import fehlgeschlagen: $e');
+    }
   }
   
   @override
@@ -691,7 +732,7 @@ return AlertDialog(
                     } else if (value == 'Export') {
                       _exportFilteredTimesToCSV();
                     } else {
-                      _showMenuDialog(value);
+                      _importCSV();
                     }
                   },
                   itemBuilder: (BuildContext context) {
