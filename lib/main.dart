@@ -535,6 +535,7 @@ child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
       appBar: AppBar(
         actions: [
           PopupMenuButton<String>(
+            color: Colors.white,
             icon: Icon(Icons.more_vert, color: Colors.orange), // Changed to three vertical points icon in orange
             onSelected: (String value) {
               if (value == 'Zeitraum') {
