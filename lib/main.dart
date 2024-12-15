@@ -283,6 +283,8 @@ void _editTimeEntry(int index) {
 
   Future<void> _initializeBluetooth() async {
     
+    // TODO Nicht nur am Anfang prüfen
+    
     // Zugriff auf Bluetooth-Erlaubnis
     await _bluetoothClassicPlugin.initPermissions();
     // Verbindung mit dem Bluetooth-Gerät herstellen
