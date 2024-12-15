@@ -144,6 +144,8 @@ class _TimeListScreenState extends State<TimeListScreen> {
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
   
 void _editTimeEntry(int index) {
+  
+  // TODO Bei ändern von dem Date wird der Eintragt nicht an die richtige Stelle eingetragen, SortedList?
   showDialog(
     context: context,
     builder: (context) {
