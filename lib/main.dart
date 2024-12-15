@@ -10,6 +10,7 @@ import 'package:bluetooth_classic/models/device.dart';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart';
 
 class TimeEntry {
 
@@ -632,16 +633,8 @@ return AlertDialog(
       // Erstelle den CSV-Inhalt aus den gefilterten Zeiten (_filteredTimes)
       String? selectedDirectory = await _selectExportDirectory();
       if (selectedDirectory == null) return; // Abbruch, falls Benutzer nichts auswählt
-      List<List<String>> rows = [
-        ["Name", "Datum", "Uhrzeit"] // Kopfzeile
-      ];
 
-      for (var entry in _filteredTimes) {
-        rows.add([entry.name, entry.date, entry.time]);
-      }
-
-      // Konvertiere die Liste in CSV-Format
-      String csv = const ListToCsvConverter().convert(rows);
+      String csv = _createCSVFile();
 
       // Speichere die Datei im Downloads-Ordner
       String fileName = fileNameController.text.trim();
@@ -656,6 +649,22 @@ return AlertDialog(
       _showMenuDialog('Export fehlgeschlagen: $e');
     }
   }
+  
+  String _createCSVFile() {
+
+    List<List<String>> rows = [
+      ["Name", "Datum", "Uhrzeit"] // Kopfzeile
+    ];
+    
+    for (var entry in _filteredTimes) {
+      rows.add([entry.name, entry.date, entry.time]);
+    }
+
+    // Konvertiere die Liste in CSV-Format
+    String csv = const ListToCsvConverter().convert(rows);
+    
+    return csv;
+  }
 
   Future<String?> _selectExportDirectory() async {
     Directory downloadsDirectory = Directory('~/Downloads');
@@ -667,6 +676,11 @@ return AlertDialog(
     );
 
     return selectedDirectory;
+  }
+  
+  Future<void> _shareFilteredTimes() async {
+    String csv = _createCSVFile();
+    Share.shareXFiles([XFile.fromData(utf8.encode(csv), mimeType: "text/csv")], fileNameOverrides: ["LichtschrankeExport.csv"]);
   }
   
   Future<void> _importCSV() async {
@@ -767,12 +781,14 @@ return AlertDialog(
                       _selectDateRange();
                     } else if (value == 'Export') {
                       _exportFilteredTimesToCSV();
-                    } else {
+                    } else if (value == 'Import') {
                       _importCSV();
+                    } else {
+                      _shareFilteredTimes();
                     }
                   },
                   itemBuilder: (BuildContext context) {
-                    return ['Zeitraum', 'Import', 'Export'].map((String choice) {
+                    return ['Zeitraum', 'Import', 'Export', 'Teilen'].map((String choice) {
                       return PopupMenuItem<String>(
                         value: choice,
                         child: Text(choice),
