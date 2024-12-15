@@ -1,4 +1,5 @@
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:intl/intl.dart';
@@ -95,9 +96,9 @@ ThemeData appTheme = ThemeData(
     bodyMedium: TextStyle(color: Colors.black87), // Abgeschwächter Standardtext
   ),
   textSelectionTheme: TextSelectionThemeData(
-    cursorColor: Colors.orange, // Cursorfarbe beim Eingeben von Text
+    cursorColor: Colors.orange,
     selectionColor: Colors.orange[300], // Markierungsfarbe für ausgewählten Text
-    selectionHandleColor: Colors.orange, // Farbe der Markierungshandles (z.B. bei Dragging)
+    selectionHandleColor: Colors.orange,
   ),
 );
 
@@ -123,6 +124,7 @@ class TimeListScreen extends StatefulWidget {
 
 class _TimeListScreenState extends State<TimeListScreen> {
   List<TimeEntry> _times = [];
+  
   bool _isDuplicate(TimeEntry timeEntry) {
     return _times.any((entry) =>
         entry.time == timeEntry.time &&
@@ -269,10 +271,15 @@ void _editName(int index) {
     super.initState();
     _loadTimes();
     _sortTimes();
+    
     _initializeBluetooth();
   }
 
+  String _connectionStatus = "Nicht verbunden.";
+  late Device lichtschranke;
+
   Future<void> _initializeBluetooth() async {
+    
     // Zugriff auf Bluetooth-Erlaubnis
     await _bluetoothClassicPlugin.initPermissions();
     // Verbindung mit dem Bluetooth-Gerät herstellen
@@ -280,16 +287,50 @@ void _editName(int index) {
     // Lichtschranke mit Name finden
     List<Device> deviceList = await _bluetoothClassicPlugin.getPairedDevices();
     
-    Device lichtschranke = await deviceList.where((device) => device.name == "Lichtschranke").first;
+    List<String> deviceNames = <String>[];
     
-    print("Adresse Lichtschranke: " + lichtschranke.address);
+    for (Device device in deviceList) {
+      deviceNames.add(device.name!);
+    }
     
-    await _bluetoothClassicPlugin.connect(lichtschranke.address, "00001101-0000-1000-8000-00805f9b34fb");
+    if (!deviceNames.contains("Lichtschranke")) {
+      setState(() {
+        _connectionStatus = "Lichtschranke nicht gefunden.";
+      });
+      return;
+    }
 
-    // Daten-Event abonnieren
+    lichtschranke = deviceList.where((device) => device.name == "Lichtschranke").first;
+
+    _bluetoothClassicPlugin.onDeviceStatusChanged().listen((status) {
+      _handleBluetoothStatus(status);
+    });
+
     _bluetoothClassicPlugin.onDeviceDataReceived().listen((event) {
       _handleData(event);
     });
+  }
+  
+  void _connectToLichtschranke() async {
+    await _bluetoothClassicPlugin.connect(lichtschranke.address, "00001101-0000-1000-8000-00805f9b34fb");
+  }
+  
+  void _handleBluetoothStatus(int status) {
+    if (status == Device.disconnected) {
+      setState(() {
+        _connectionStatus = "Nicht verbunden.";
+      });
+    }
+    else if (status == Device.connecting) {
+      setState(() {
+        _connectionStatus = "Verbinde mit Lichtschranke...";
+      });
+    }
+    else {
+      setState(() {
+        _connectionStatus = "Verbunden mit Lichtschranke";
+      });
+    }
   }
 
   bool _isLessThan500ms(TimeEntry newEntry) {
@@ -301,18 +342,20 @@ void _editName(int index) {
   }
 
   void _handleData(Uint8List event) {
-    setState(() {
-      String timeInMillisStr = String.fromCharCodes(event).trim();
-      int timeInMillis = int.parse(timeInMillisStr);
-      DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timeInMillis, isUtc: true);
 
-      String formattedTime = DateFormat('HH:mm:ss.SSS').format(dateTime);
-      TimeEntry newEntry = TimeEntry(
-          time: formattedTime,
-          timeInMillis: timeInMillis,
-          date: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
-      
-      if (_isDuplicate(newEntry) || _isLessThan500ms(newEntry)) return;
+    String timeInMillisStr = String.fromCharCodes(event).trim();
+    int timeInMillis = int.parse(timeInMillisStr);
+    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timeInMillis, isUtc: true);
+
+    String formattedTime = DateFormat('HH:mm:ss.SSS').format(dateTime);
+    TimeEntry newEntry = TimeEntry(
+        time: formattedTime,
+        timeInMillis: timeInMillis,
+        date: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
+
+    if (_isDuplicate(newEntry) || _isLessThan500ms(newEntry)) return;
+    
+    setState(() {
 
       // Fügen Sie den empfangenen Zeitstempel zur Liste hinzu
       _times.add(newEntry);
@@ -502,13 +545,6 @@ return AlertDialog(
         initialDateRange: DateTimeRange(
             start: today.subtract(Duration(days: today.weekday -1)), // Get Week start
             end: today),
-        /*builder: (context, child) => Theme(
-            data: ThemeData().copyWith(
-              colorScheme: ColorScheme.light(
-                primary: Colors.orange
-              )
-            ),
-            child: child!)*/
     );
     
     _filterByDateRange(dateTimeRange!);
@@ -740,8 +776,7 @@ return AlertDialog(
                       return PopupMenuItem<String>(
                         value: choice,
                         child: Text(choice),
-                        // TODO Implementation 1/3
-                        // TODO Fix Bluetooth freeze
+                        // TODO Teilen button
                       );
                     }).toList();
                   },
@@ -751,40 +786,80 @@ return AlertDialog(
           ],
         )
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTimeDialog,
-        child: const Icon(Icons.add),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 50.0),
+        child: FloatingActionButton(
+          onPressed: _showAddTimeDialog,
+          child: const Icon(Icons.add),
+        ),
       ),
-      body: Container(
-        color: Colors.white,
-        child: ListView.builder(
-        itemCount: _filteredTimes.length,
-        itemBuilder: (context, index) {
-          final entry = _filteredTimes[index];
-          return ListTile(
-            title: Text(entry.name.isEmpty ? ' ' : entry.name),
-
-            subtitle: Text('${entry.time} ${entry.date}'), // Ensure updated format displays correctly
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
+      body: Column(
+        children: [
+          Expanded(
+            child: Container(
+              color: Colors.white,
+              child: ListView.builder(
+              itemCount: _filteredTimes.length,
+              itemBuilder: (context, index) {
+                final entry = _filteredTimes[index];
+                return ListTile(
+                  title: Text(entry.name.isEmpty ? ' ' : entry.name),
+            
+                  subtitle: Text('${entry.time} ${entry.date}'), // Ensure updated format displays correctly
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () {
+                          if (index >= 0 && index < _filteredTimes.length) _editName(index);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          if (index >= 0 && index < _filteredTimes.length) _deleteTime(index);
+                        },
+                      )
+                    ],
+                  ),
+                );
+              },
+              ),
+            ),
+          ),
+          Container(
+            color:  (_connectionStatus == "Verbunden mit Lichtschranke")? Colors.green[200]
+                : (_connectionStatus == "Verbinde mit Lichtschranke...")? Colors.orange[200]
+                : Colors.red[200],
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    if (index >= 0 && index < _filteredTimes.length) _editName(index);
-                  },
+                Icon(Icons.bluetooth, color: (_connectionStatus == "Verbunden mit Lichtschranke")? Colors.green
+                    : (_connectionStatus == "Verbinde mit Lichtschranke...")? Colors.orange
+                    : Colors.red,
+                  size: 40.0,),
+                Expanded(
+                  child: Text(
+                    _connectionStatus,
+                    style: (_connectionStatus == "Verbunden mit Lichtschranke")? TextStyle(color: Colors.green[900]) 
+                          : (_connectionStatus == "Verbinde mit Lichtschranke...")? TextStyle(color: Colors.orange[900])
+                          : TextStyle(color: Colors.red[900]),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () {
-                    if (index >= 0 && index < _filteredTimes.length) _deleteTime(index);
-                  },
-                )
+                    onPressed: () {
+                      if (_connectionStatus != "Verbunden mit Lichtschranke"
+                          && _connectionStatus != "Verbinde mit Lichtschranke...")
+                        _connectToLichtschranke();
+                    },
+                    icon: Icon(Icons.refresh, color: Colors.black)),
               ],
             ),
-          );
-        },
-        ),
+          ),
+        ],
       ),
     );
   }
