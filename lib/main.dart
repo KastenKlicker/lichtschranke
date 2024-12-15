@@ -143,7 +143,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
   String _currentSearchQuery = '';
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
   
-void _editName(int index) {
+void _editTimeEntry(int index) {
   showDialog(
     context: context,
     builder: (context) {
@@ -527,7 +527,7 @@ return AlertDialog(
   void _filterByDateRange(DateTimeRange dateRange) {
     List<TimeEntry> filteredTimes = _times.where((entry) {
       DateTime entryDate = DateFormat('dd.MM.yyyy HH:mm').parse('${entry.date} ${entry.time}');
-      return entryDate.isAfter(dateRange.start) && entryDate.isBefore(dateRange.end);
+      return entryDate.isAfter(dateRange.start) && entryDate.isBefore(dateRange.end.add(Duration(days: 1)));
     }).toList();
     setState(() {
       _filteredTimes = filteredTimes;
@@ -828,7 +828,7 @@ return AlertDialog(
                       IconButton(
                         icon: const Icon(Icons.edit),
                         onPressed: () {
-                          if (index >= 0 && index < _filteredTimes.length) _editName(index);
+                          if (index >= 0 && index < _filteredTimes.length) _editTimeEntry(index);
                         },
                       ),
                       IconButton(
