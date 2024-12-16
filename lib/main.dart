@@ -12,12 +12,15 @@ import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 
+// TODO Start über Smartphone
+
 class TimeEntry {
 
   String time; // Reference modification to include milliseconds
   String date; // Added field for date
   String name;
   int timeInMillis;
+  // TODO Strecke mit vorher Auswahl
 
   TimeEntry({required this.time, required this.date, required this.timeInMillis, this.name = ''}); // Ensure usage of updated format
 
@@ -168,6 +171,7 @@ void _editTimeEntry(int index) {
                 decoration: InputDecoration(
                   hintText: 'HH:mm:ss.SSS',
                   errorText: isTimeValid ? null : 'Invalid time format',
+                  
                   border: OutlineInputBorder(
                     borderSide: BorderSide(
                         color: isTimeValid ? Colors.grey : Colors.red),
@@ -414,7 +418,9 @@ void _editTimeEntry(int index) {
     showDialog(
       context: context,
       builder: (context) {
-        TextEditingController timeController = TextEditingController();
+        TextEditingController timeController = TextEditingController(
+            text: DateFormat('HH:mm:ss.SSS').format(DateTime(0, 0, 0, 0, 0, 0, 0, 0))
+        );
         TextEditingController dateController = TextEditingController(
             text: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
         TextEditingController nameController = TextEditingController();
