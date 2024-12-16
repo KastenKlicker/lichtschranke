@@ -347,9 +347,16 @@ void _editTimeEntry(int index) {
   }
 
   void _handleData(Uint8List event) {
-
     String timeInMillisStr = String.fromCharCodes(event).trim();
+    if (timeInMillisStr.contains("Reset")) {
+        return;
+    }
     int timeInMillis = int.parse(timeInMillisStr);
+    
+    if (timeInMillis == 0) {
+      return;
+    }
+    
     DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timeInMillis, isUtc: true);
 
     String formattedTime = DateFormat('HH:mm:ss.SSS').format(dateTime);
@@ -796,7 +803,6 @@ return AlertDialog(
                       return PopupMenuItem<String>(
                         value: choice,
                         child: Text(choice),
-                        // TODO Teilen button
                       );
                     }).toList();
                   },
@@ -807,7 +813,7 @@ return AlertDialog(
         )
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 50.0),
+        padding: const EdgeInsets.only(bottom: 55.0),
         child: FloatingActionButton(
           onPressed: _showAddTimeDialog,
           child: const Icon(Icons.add),
@@ -856,10 +862,16 @@ return AlertDialog(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.bluetooth, color: (_connectionStatus == "Verbunden mit Lichtschranke")? Colors.green
+                IconButton(
+                  onPressed: () {
+                    if (_connectionStatus != "Verbunden mit Lichtschranke"
+                        && _connectionStatus != "Verbinde mit Lichtschranke...")
+                      _connectToLichtschranke();
+                  },
+                  icon: Icon(Icons.bluetooth,
+                    color: (_connectionStatus == "Verbunden mit Lichtschranke")? Colors.green
                     : (_connectionStatus == "Verbinde mit Lichtschranke...")? Colors.orange
-                    : Colors.red,
-                  size: 40.0,),
+                    : Colors.red,)),
                 Expanded(
                   child: Text(
                     _connectionStatus,
@@ -871,9 +883,19 @@ return AlertDialog(
                 ),
                 IconButton(
                     onPressed: () {
-                      if (_connectionStatus != "Verbunden mit Lichtschranke"
-                          && _connectionStatus != "Verbinde mit Lichtschranke...")
-                        _connectToLichtschranke();
+                      if (_connectionStatus == "Verbunden mit Lichtschranke") {
+                        _bluetoothClassicPlugin.write("reset\n");
+                      
+                        MaterialBanner materialBanner= MaterialBanner(
+                          content: Text('Lichtschranke wurde zurückgesetzt'), actions: [
+                          TextButton(
+                              onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
+                              child: const Text("Verstanden"))
+                        ],
+                        );
+                        
+                        ScaffoldMessenger.of(context).showMaterialBanner(materialBanner);
+                      }
                     },
                     icon: Icon(Icons.refresh, color: Colors.black)),
               ],
