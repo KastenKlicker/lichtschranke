@@ -15,31 +15,74 @@ import 'package:share_plus/share_plus.dart';
 // TODO Start über Smartphone
 
 class TimeEntry {
-
-  String time; // Reference modification to include milliseconds
-  String date; // Added field for date
+  
+  DateTime date; // Added field for date
   String name;
+  String distance;
   int timeInMillis;
-  // TODO Strecke mit vorher Auswahl
 
-  TimeEntry({required this.time, required this.date, required this.timeInMillis, this.name = ''}); // Ensure usage of updated format
+  TimeEntry({
+    required this.date,
+    required this.timeInMillis,
+    this.name = '',
+    this.distance = ''
+  }); // Ensure usage of updated format
 
   Map<String, String> toMap() {
     return {
-      'time': time,
-      'date': date,
+      'date': date.toIso8601String(),
       'name': name,
-      'timeInMillis': timeInMillis.toString(), // Sicherstellen, dass this auch bei Speicherung bleibt
+      'timeInMillis': timeInMillis.toString(),
+      'distance' : distance,
     };
   }
 
   static TimeEntry fromMap(Map<String, String> map) {
     return TimeEntry(
-      time: map['time']!,
-      date: map['date']!,
+      date: DateTime.parse(map['date']!),
       name: map['name'] ?? '',
-      timeInMillis: int.parse(map['timeInMillis']!), // timeInMillis hinzugefügt und von String konvertiert
+      timeInMillis: int.parse(map['timeInMillis']!),
+      distance: map['distance'] ?? '',
     );
+  }
+
+  String getTimeFormatted() {
+    final hours = (timeInMillis ~/ (1000 * 60 * 60)) % 24; // Stunden
+    final minutes = (timeInMillis ~/ (1000 * 60)) % 60; // Minuten
+    final seconds = (timeInMillis ~/ 1000) % 60; // Sekunden
+    final millis = timeInMillis % 1000; // Millisekunden
+
+    // Formatierung mit führenden Nullen
+    final formattedHours = hours.toString().padLeft(2, '0');
+    final formattedMinutes = minutes.toString().padLeft(2, '0');
+    final formattedSeconds = seconds.toString().padLeft(2, '0');
+    final formattedMilliseconds = millis.toString().padLeft(3, '0');
+
+    return '$formattedHours:$formattedMinutes:$formattedSeconds.$formattedMilliseconds';
+  }
+
+  static int parseTimeToMilliseconds(String time) {
+    // Splitte den String in Stunden, Minuten, Sekunden und Millisekunden
+    final parts = time.split(RegExp(r'[:.]'));
+
+    if (parts.length != 4) {
+      throw FormatException('Das Zeitformat muss "HH:mm:ss.SSS" sein');
+    }
+
+    // Teile in Integer umwandeln
+    final hours = int.parse(parts[0]);
+    final minutes = int.parse(parts[1]);
+    final seconds = int.parse(parts[2]);
+    final milliseconds = int.parse(parts[3]);
+
+    // Umrechnung in Millisekunden
+    int totalMilliseconds =
+        (hours * 60 * 60 * 1000) + // Stunden -> Millisekunden
+            (minutes * 60 * 1000) +   // Minuten -> Millisekunden
+            (seconds * 1000) +        // Sekunden -> Millisekunden
+            milliseconds;             // Millisekunden direkt
+
+    return totalMilliseconds;
   }
 }
 
@@ -131,22 +174,22 @@ class _TimeListScreenState extends State<TimeListScreen> {
   
   bool _isDuplicate(TimeEntry timeEntry) {
     return _times.any((entry) =>
-        entry.time == timeEntry.time &&
         entry.date == timeEntry.date &&
-        entry.name == timeEntry.name);
+        entry.name == timeEntry.name &&
+        entry.date == timeEntry.date);
   }
   List<TimeEntry> _filteredTimes = [];
   void _sortTimes() {
     _times.sort((a, b) {
       final dateComparison = b.date.compareTo(a.date);
-      return dateComparison != 0 ? dateComparison : b.time.compareTo(a.time);
+      return dateComparison != 0 ? dateComparison : b.timeInMillis.compareTo(a.timeInMillis);
     });
     _filteredTimes = List.from(_times);
   }
   String _currentSearchQuery = '';
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
-  
-void _editTimeEntry(int index) {
+
+  /*void _editTimeEntry(int index) {
   
   // TODO Bei ändern von dem Date wird der Eintragt nicht an die richtige Stelle eingetragen, SortedList?
   showDialog(
@@ -235,7 +278,6 @@ void _editTimeEntry(int index) {
 
                   setState(() {
                     
-                    _filteredTimes[index].time = time;
                     _filteredTimes[index].date = date;
                     _filteredTimes[index].name = name;
                     _filteredTimes[index].timeInMillis =
@@ -246,8 +288,8 @@ void _editTimeEntry(int index) {
                     _sortTimes();
 
                     int originalIndex = _times.indexWhere((entry) =>
-                        entry.time ==
-                            _filteredTimes[index].time &&
+                        entry.timeInMillis ==
+                            _filteredTimes[index].timeInMillis &&
                         entry.date ==
                             _filteredTimes[index].date);
                     if (originalIndex != -1) {
@@ -271,7 +313,7 @@ void _editTimeEntry(int index) {
         ],
       );
     });
-}
+}*/
 
   @override
   void initState() {
@@ -361,13 +403,9 @@ void _editTimeEntry(int index) {
       return;
     }
     
-    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timeInMillis, isUtc: true);
-
-    String formattedTime = DateFormat('HH:mm:ss.SSS').format(dateTime);
     TimeEntry newEntry = TimeEntry(
-        time: formattedTime,
         timeInMillis: timeInMillis,
-        date: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
+        date: DateTime.now());
 
     if (_isDuplicate(newEntry) || _isLessThan500ms(newEntry)) return;
     
@@ -395,7 +433,7 @@ void _editTimeEntry(int index) {
             .map((timeString) => TimeEntry.fromMap(Map<String, String>.from(json.decode(timeString)))) // Ensure updated format
             .toList();
         _sortTimes();
-        _filteredTimes = List.from(_times)..sort((a, b) => b.time.compareTo(a.time));
+        _filteredTimes = List.from(_times)..sort((a, b) => b.timeInMillis.compareTo(a.timeInMillis));
       });
     }
   }
@@ -414,136 +452,133 @@ void _editTimeEntry(int index) {
   }
   
   // Add a new time
-  void _showAddTimeDialog() {
+  void _showEntryDialog(TimeEntry timeEntry, {int index = -100}) {
     showDialog(
       context: context,
       builder: (context) {
         TextEditingController timeController = TextEditingController(
-            text: DateFormat('HH:mm:ss.SSS').format(DateTime(0, 0, 0, 0, 0, 0, 0, 0))
+            text: timeEntry.getTimeFormatted()
         );
         TextEditingController dateController = TextEditingController(
-            text: DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now()));
-        TextEditingController nameController = TextEditingController();
+            text: DateFormat('dd.MM.yyyy HH:mm').format(timeEntry.date));
+        TextEditingController nameController = TextEditingController(
+          text: timeEntry.name
+        );
 
         bool isTimeValid = true;
         bool isDateValid = true;
 
-return AlertDialog(
-  backgroundColor: Colors.white,
-          title: const Text('Neue Zeit'),
-          content: StatefulBuilder(builder: (context, setState) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: timeController,
-                  decoration: InputDecoration(
-                    hintText: 'HH:mm:ss.SSS',
-                    errorText: isTimeValid ? null : 'Invalid time format',
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(
-                          color: isTimeValid ? Colors.grey : Colors.red),
+  return AlertDialog(
+    backgroundColor: Colors.white,
+            title: const Text('Zeiteintrag'),
+            content: StatefulBuilder(builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: timeController,
+                    decoration: InputDecoration(
+                      hintText: 'HH:mm:ss.SSS',
+                      errorText: isTimeValid ? null : 'Invalid time format',
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(
+                            color: isTimeValid ? Colors.grey : Colors.red),
+                      ),
                     ),
+                    keyboardType: TextInputType.datetime,
+                    onChanged: (value) {
+                      setState(() {
+                        try {
+                          DateFormat('HH:mm:ss.SSS').parseStrict(value);
+                          isTimeValid = true;
+                        } catch (e) {
+                          isTimeValid = false;
+                        }
+                      });
+                    },
                   ),
-                  keyboardType: TextInputType.datetime,
-                  onChanged: (value) {
-                    setState(() {
-                      try {
-                        DateFormat('HH:mm:ss.SSS').parseStrict(value);
-                        isTimeValid = true;
-                      } catch (e) {
-                        isTimeValid = false;
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: dateController,
-                  decoration: InputDecoration(
-                    hintText: 'dd.MM.yyyy HH:mm',
-                    errorText: isDateValid ? null : 'Invalid date format',
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(
-                          color: isDateValid ? Colors.grey : Colors.red),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: dateController,
+                    decoration: InputDecoration(
+                      hintText: 'dd.MM.yyyy HH:mm',
+                      errorText: isDateValid ? null : 'Invalid date format',
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(
+                            color: isDateValid ? Colors.grey : Colors.red),
+                      ),
                     ),
+                    keyboardType: TextInputType.datetime,
+                    onChanged: (value) {
+                      setState(() {
+                        try {
+                          DateFormat('dd.MM.yyyy HH:mm').parseStrict(value);
+                          isDateValid = true;
+                        } catch (e) {
+                          isDateValid = false;
+                        }
+                      });
+                    },
                   ),
-                  keyboardType: TextInputType.datetime,
-                  onChanged: (value) {
-                    setState(() {
-                      try {
-                        DateFormat('dd.MM.yyyy HH:mm').parseStrict(value);
-                        isDateValid = true;
-                      } catch (e) {
-                        isDateValid = false;
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(hintText: 'Name'),
-                ),
-              ],
-            );
-          }),
-          actions: [
-            ElevatedButton(
-              child: const Text('Hinzufügen', style: TextStyle(color: Colors.white)),
-              onPressed: () {
-                if (isTimeValid && isDateValid) {
-                  String time = timeController.text.trim();
-                  String date = dateController.text.trim();
-                  String name = nameController.text.trim();
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(hintText: 'Name'),
+                  ),
+                ],
+              );
+            }),
+            actions: [
+              ElevatedButton(
+                child: const Text('Speichern', style: TextStyle(color: Colors.white)),
+                onPressed: () {
+                  if (isTimeValid && isDateValid) {
+                    String time = timeController.text.trim();
+                    String date = dateController.text.trim();
+                    String name = nameController.text.trim();
+  
+                    try {
 
-                  try {
-                    DateFormat('HH:mm:ss.SSS').parseStrict(time);
-                    DateFormat('dd.MM.yyyy HH:mm').parseStrict(date);
+                      TimeEntry newEntry = TimeEntry(
+                          date: DateFormat('dd.MM.yyyy HH:mm').parseStrict(date),
+                          name: name,
+                          timeInMillis: TimeEntry.parseTimeToMilliseconds(time));
+                        if (index != -100)
+                          _deleteTime(index);
 
-                    int timeInMillis = DateFormat('HH:mm:ss.SSS')
-                        .parse(time)
-                        .millisecondsSinceEpoch;
+                        if (_isDuplicate(newEntry))
+                          return;
 
-                    TimeEntry newEntry = TimeEntry(
-                        time: time,
-                        date: date,
-                        name: name,
-                        timeInMillis: timeInMillis);
-
-                    if (_isDuplicate(newEntry)) {
-                      return;
+                      setState(() {
+                        _times.add(newEntry);
+                        _sortTimes();
+                        _filteredTimes = List.from(_times);
+                      });
+                      
+                      _saveTimes();
+                      Navigator.of(context).pop();
+                    } catch (e) {
+                      // Fehler wird automatisch durch die Ränder des Textfelds angezeigt
                     }
-
-                    setState(() {
-                      _times.add(newEntry);
-                      _sortTimes();
-                      _filteredTimes = List.from(_times);
-                    });
-
-                    _saveTimes();
-                    Navigator.of(context).pop();
-                  } catch (e) {
-                    // Fehler wird automatisch durch die Ränder des Textfelds angezeigt
                   }
-                }
-              },
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Abbrechen'),
-            ),
-          ],
-        );
-      },
-    );
+                },
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Abbrechen'),
+              ),
+            ],
+          );
+        },
+      );
   }
 
   void _filterByDateRange(DateTimeRange dateRange) {
     List<TimeEntry> filteredTimes = _times.where((entry) {
-      DateTime entryDate = DateFormat('dd.MM.yyyy HH:mm').parse('${entry.date} ${entry.time}');
+      // DateTime entryDate = DateFormat('dd.MM.yyyy HH:mm').parse('${entry.date} ${entry.time}'); TODO Idk was hier passiert, warum ist da ein ${entry.time}
+      DateTime entryDate = DateFormat('dd.MM.yyyy HH:mm').parse('${entry.date}');
       return entryDate.isAfter(dateRange.start) && entryDate.isBefore(dateRange.end.add(Duration(days: 1)));
     }).toList();
     setState(() {
@@ -597,7 +632,7 @@ return AlertDialog(
 
       // Entferne nur den klar identifizierten Eintrag aus `_times`
       _times.removeWhere((entry) =>
-      entry.time == timeEntry.time &&
+      entry.timeInMillis == timeEntry.timeInMillis &&
           entry.date == timeEntry.date &&
           entry.name == timeEntry.name);
 
@@ -674,7 +709,7 @@ return AlertDialog(
     ];
     
     for (var entry in _filteredTimes) {
-      rows.add([entry.name, entry.date, entry.time]);
+      rows.add([entry.name, entry.date.toIso8601String(), entry.timeInMillis.toString()]);
     }
 
     // Konvertiere die Liste in CSV-Format
@@ -717,9 +752,8 @@ return AlertDialog(
           if (row.length >= 3) {
             TimeEntry mightBeAdded = TimeEntry(
               name: row[0].toString(),
-              date: row[1].toString(),
-              time: row[2].toString(),
-              timeInMillis: DateFormat('HH:mm:ss.SSS').parse(row[2]).millisecondsSinceEpoch,
+              date: DateTime.parse(row[1].toString()),
+              timeInMillis: int.parse(row[2]),
             );
             if(!_isDuplicate(mightBeAdded))
               importedTimes.add(mightBeAdded);
@@ -821,7 +855,9 @@ return AlertDialog(
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 55.0),
         child: FloatingActionButton(
-          onPressed: _showAddTimeDialog,
+          onPressed: () => _showEntryDialog(
+            TimeEntry(date: DateTime.now(), timeInMillis: 0)
+          ),
           child: const Icon(Icons.add),
         ),
       ),
@@ -836,15 +872,15 @@ return AlertDialog(
                 final entry = _filteredTimes[index];
                 return ListTile(
                   title: Text(entry.name.isEmpty ? ' ' : entry.name),
-            
-                  subtitle: Text('${entry.time} ${entry.date}'), // Ensure updated format displays correctly
+                  // Ensure updated format displays correctly
+                  subtitle: Text('${entry.getTimeFormatted()} ${DateFormat('dd.MM.yyyy HH:mm').format(entry.date)}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit),
                         onPressed: () {
-                          if (index >= 0 && index < _filteredTimes.length) _editTimeEntry(index);
+                          if (index >= 0 && index < _filteredTimes.length) _showEntryDialog(_filteredTimes[index], index: index);
                         },
                       ),
                       IconButton(
