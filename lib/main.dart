@@ -1,5 +1,6 @@
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:intl/intl.dart';
@@ -14,7 +15,7 @@ import 'package:share_plus/share_plus.dart';
 
 // TODO Start über Smartphone
 
-class TimeEntry {
+class TimeEntry implements Comparable<TimeEntry>{
   
   DateTime date; // Added field for date
   String name;
@@ -83,6 +84,24 @@ class TimeEntry {
             milliseconds;             // Millisekunden direkt
 
     return totalMilliseconds;
+  }
+
+  @override
+  int compareTo(TimeEntry other) {
+    // Invertiere den Vergleich nach Datum
+    final int dateComparison = other.date.compareTo(this.date);
+    if (dateComparison != 0) {
+      return dateComparison;
+    }
+
+    // Invertiere den Vergleich nach Zeit in Millisekunden
+    final int timeComparison = other.timeInMillis.compareTo(this.timeInMillis);
+    if (timeComparison != 0) {
+      return timeComparison;
+    }
+
+    // Zuletzt den Vergleich nach Name (alphabetisch absteigend)
+    return this.name.compareTo(other.name);
   }
 }
 
@@ -170,157 +189,16 @@ class TimeListScreen extends StatefulWidget {
 }
 
 class _TimeListScreenState extends State<TimeListScreen> {
-  List<TimeEntry> _times = [];
+  SplayTreeSet<TimeEntry> _times = SplayTreeSet();
   
-  bool _isDuplicate(TimeEntry timeEntry) {
-    return _times.any((entry) =>
-        entry.date == timeEntry.date &&
-        entry.name == timeEntry.name &&
-        entry.date == timeEntry.date);
-  }
   List<TimeEntry> _filteredTimes = [];
-  void _sortTimes() {
-    _times.sort((a, b) {
-      final dateComparison = b.date.compareTo(a.date);
-      return dateComparison != 0 ? dateComparison : b.timeInMillis.compareTo(a.timeInMillis);
-    });
-    _filteredTimes = List.from(_times);
-  }
   String _currentSearchQuery = '';
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
-
-  /*void _editTimeEntry(int index) {
-  
-  // TODO Bei ändern von dem Date wird der Eintragt nicht an die richtige Stelle eingetragen, SortedList?
-  showDialog(
-    context: context,
-    builder: (context) {
-      TextEditingController timeController = TextEditingController(text: _filteredTimes[index].time);
-      TextEditingController dateController = TextEditingController(text: _filteredTimes[index].date);
-      TextEditingController nameController = TextEditingController(text: _filteredTimes[index].name);
-
-      bool isTimeValid = true;
-      bool isDateValid = true;
-
-      return AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text('Eintrag bearbeiten'),
-        content: StatefulBuilder(builder: (context, setState) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: timeController,
-                decoration: InputDecoration(
-                  hintText: 'HH:mm:ss.SSS',
-                  errorText: isTimeValid ? null : 'Invalid time format',
-                  
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(
-                        color: isTimeValid ? Colors.grey : Colors.red),
-                  ),
-                ),
-                keyboardType: TextInputType.datetime,
-                onChanged: (value) {
-                  setState(() {
-                    try {
-                      DateFormat('HH:mm:ss.SSS').parseStrict(value);
-                      isTimeValid = true;
-                    } catch (e) {
-                      isTimeValid = false;
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: dateController,
-                decoration: InputDecoration(
-                  hintText: 'dd.MM.yyyy HH:mm',
-                  errorText: isDateValid ? null : 'Invalid date format',
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(
-                        color: isDateValid ? Colors.grey : Colors.red),
-                  ),
-                ),
-                keyboardType: TextInputType.datetime,
-                onChanged: (value) {
-                  setState(() {
-                    try {
-                      DateFormat('dd.MM.yyyy HH:mm').parseStrict(value);
-                      isDateValid = true;
-                    } catch (e) {
-                      isDateValid = false;
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(hintText: 'Name'),
-              ),
-            ],
-          );
-        }),
-        actions: [
-          ElevatedButton(
-            child: const Text('Speichern', style: TextStyle(color: Colors.white)),
-            onPressed: () {
-              if (isTimeValid && isDateValid) {
-                String time = timeController.text.trim();
-                String date = dateController.text.trim();
-                String name = nameController.text.trim();
-
-                try {
-                  DateFormat('HH:mm:ss.SSS').parseStrict(time);
-                  DateFormat('dd.MM.yyyy HH:mm').parseStrict(date);
-
-                  setState(() {
-                    
-                    _filteredTimes[index].date = date;
-                    _filteredTimes[index].name = name;
-                    _filteredTimes[index].timeInMillis =
-                        DateFormat('HH:mm:ss.SSS')
-                            .parse(time)
-                            .millisecondsSinceEpoch;
-
-                    _sortTimes();
-
-                    int originalIndex = _times.indexWhere((entry) =>
-                        entry.timeInMillis ==
-                            _filteredTimes[index].timeInMillis &&
-                        entry.date ==
-                            _filteredTimes[index].date);
-                    if (originalIndex != -1) {
-                      _times[originalIndex] = _filteredTimes[index];
-                    }
-                  });
-                  _saveTimes();
-                  Navigator.of(context).pop();
-                } catch (e) {
-                  // Handle validation errors
-                }
-              }
-            },
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Abbrechen'),
-          ),
-        ],
-      );
-    });
-}*/
 
   @override
   void initState() {
     super.initState();
     _loadTimes();
-    _sortTimes();
-    
     _initializeBluetooth();
   }
 
@@ -386,7 +264,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
 
   bool _isLessThan500ms(TimeEntry newEntry) {
     return _times.any((entry) {
-      if (entry.date != newEntry.date) return false;
+      if (entry.compareTo(newEntry) == 0) return false;
       int difference = newEntry.timeInMillis - entry.timeInMillis;
       return difference < 500;
     });
@@ -407,14 +285,13 @@ class _TimeListScreenState extends State<TimeListScreen> {
         timeInMillis: timeInMillis,
         date: DateTime.now());
 
-    if (_isDuplicate(newEntry) || _isLessThan500ms(newEntry)) return;
+    if (_isLessThan500ms(newEntry))
+      return;
     
     setState(() {
 
       // Fügen Sie den empfangenen Zeitstempel zur Liste hinzu
       _times.add(newEntry);
-      
-      _sortTimes();
 
       _filteredTimes = List.from(_times);
     });
@@ -429,11 +306,10 @@ class _TimeListScreenState extends State<TimeListScreen> {
     List<String>? timeStringList = prefs.getStringList('times');
     if (timeStringList != null) {
       setState(() {
-        _times = timeStringList
+        _times = SplayTreeSet.from(timeStringList
             .map((timeString) => TimeEntry.fromMap(Map<String, String>.from(json.decode(timeString)))) // Ensure updated format
-            .toList();
-        _sortTimes();
-        _filteredTimes = List.from(_times)..sort((a, b) => b.timeInMillis.compareTo(a.timeInMillis));
+            .toSet());
+        _filteredTimes = List.from(_times);
       });
     }
   }
@@ -546,12 +422,8 @@ class _TimeListScreenState extends State<TimeListScreen> {
                         if (index != -100)
                           _deleteTime(index);
 
-                        if (_isDuplicate(newEntry))
-                          return;
-
                       setState(() {
                         _times.add(newEntry);
-                        _sortTimes();
                         _filteredTimes = List.from(_times);
                       });
                       
@@ -575,31 +447,29 @@ class _TimeListScreenState extends State<TimeListScreen> {
       );
   }
 
-  void _filterByDateRange(DateTimeRange dateRange) {
+  DateTimeRange _dateTimeRange = DateTimeRange(
+      start: DateTime.now().subtract(Duration(days: DateTime.now().weekday -1)), // Get Week start
+      end: DateTime.now());
+
+  void _filterByDateRange(DateTimeRange dateTimeRange) {
     List<TimeEntry> filteredTimes = _times.where((entry) {
-      // DateTime entryDate = DateFormat('dd.MM.yyyy HH:mm').parse('${entry.date} ${entry.time}'); TODO Idk was hier passiert, warum ist da ein ${entry.time}
-      DateTime entryDate = DateFormat('dd.MM.yyyy HH:mm').parse('${entry.date}');
-      return entryDate.isAfter(dateRange.start) && entryDate.isBefore(dateRange.end.add(Duration(days: 1)));
+      return entry.date.isAfter(dateTimeRange.start) && entry.date.isBefore(dateTimeRange.end.add(Duration(days: 1)));
     }).toList();
     setState(() {
       _filteredTimes = filteredTimes;
+      _dateTimeRange = dateTimeRange;
     });
   }
 
   // Show a dialog to filter based on date range
   Future<void> _selectDateRange() async {
-  
-  DateTime today = DateTime.now();
 
     DateTimeRange? dateTimeRange = await showDateRangePicker(
         context: context,
         firstDate: DateTime(2024), 
         lastDate: DateTime(2100),
-        initialDateRange: DateTimeRange(
-            start: today.subtract(Duration(days: today.weekday -1)), // Get Week start
-            end: today),
+        initialDateRange: _dateTimeRange,
     );
-    
     _filterByDateRange(dateTimeRange!);
     
   }
@@ -625,6 +495,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
   }
 
   // Delete a time entry
+  // TODO Wenn ein Item gelöscht wird so wird der Zeitfilter wieder verworfen
   void _deleteTime(int index) async {
     setState(() {
       TimeEntry timeEntry = _filteredTimes[index];
@@ -750,19 +621,18 @@ class _TimeListScreenState extends State<TimeListScreen> {
         List<TimeEntry> importedTimes = [];
         for (var row in csvRows.skip(1)) { // Skip header row
           if (row.length >= 3) {
-            TimeEntry mightBeAdded = TimeEntry(
-              name: row[0].toString(),
-              date: DateTime.parse(row[1].toString()),
-              timeInMillis: int.parse(row[2]),
+            importedTimes.add(
+                TimeEntry(
+                  name: row[0].toString(),
+                  date: DateTime.parse(row[1].toString()),
+                  timeInMillis: row[2],
+                )
             );
-            if(!_isDuplicate(mightBeAdded))
-              importedTimes.add(mightBeAdded);
           }
         }
 
         setState(() {
           _times.addAll(importedTimes);
-          _sortTimes();
           _filteredTimes = List.from(_times);
         });
 
@@ -881,6 +751,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
                         icon: const Icon(Icons.edit),
                         onPressed: () {
                           if (index >= 0 && index < _filteredTimes.length) _showEntryDialog(_filteredTimes[index], index: index);
+                          
                         },
                       ),
                       IconButton(
