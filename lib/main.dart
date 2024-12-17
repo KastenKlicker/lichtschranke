@@ -332,17 +332,8 @@ class _TimeListScreenState extends State<TimeListScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        TextEditingController hoursController = TextEditingController(
-            text: '${(timeEntry.timeInMillis ~/ (1000 * 60 * 60)) % 24}'
-        );
-        TextEditingController minutesController = TextEditingController(
-            text: '${(timeEntry.timeInMillis ~/ (1000 * 60)) % 60}'
-        );
-        TextEditingController secondsController = TextEditingController(
-            text: '${(timeEntry.timeInMillis ~/ 1000) % 60}'
-        );
-        TextEditingController millisController = TextEditingController(
-            text: '${timeEntry.timeInMillis % 1000}'
+        TextEditingController timeController = TextEditingController(
+            text: timeEntry.getTimeFormatted()
         );
         TextEditingController dateController = TextEditingController(
             text: DateFormat('dd.MM.yyyy HH:mm').format(timeEntry.date));
@@ -369,60 +360,26 @@ class _TimeListScreenState extends State<TimeListScreen> {
                   Expanded( // Zeit- und Datum-Textfelder nebeneinander
                     child: Column(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                maxLength: 2,
-                                controller: hoursController,
-                                decoration: const InputDecoration(
-                                  hintText: 'HH',
-                                  counterText: '',
-                                  labelText: "Stunden"
-                                ),
-                                keyboardType: TextInputType.number,
-                              ),
+                        TextField(
+                          controller: timeController,
+                          decoration: InputDecoration(
+                            hintText: 'HH:mm:ss.SSS',
+                            errorText: isTimeValid ? null : 'Invalid time format',
+                            border: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                  color: isTimeValid ? Colors.grey : Colors.red),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextField(
-                                maxLength: 2,
-                                controller: minutesController,
-                                decoration: const InputDecoration(
-                                    hintText: 'mm',
-                                    counterText: '',
-                                    labelText: "Minuten"
-                                ),
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextField(
-                                maxLength: 2,
-                                controller: secondsController,
-                                decoration: const InputDecoration(
-                                    hintText: 'ss',
-                                    counterText: '',
-                                    labelText: "Sekunden"
-                                ),
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextField(
-                                maxLength: 3,
-                                controller: millisController,
-                                decoration: const InputDecoration(
-                                    hintText: 'SSS',
-                                    counterText: '',
-                                    labelText: "Millisekunden"
-                                ),
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                          ],
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              try {
+                                DateFormat('HH:mm:ss.SSS').parseStrict(value);
+                                isTimeValid = true;
+                              } catch (e) {
+                                isTimeValid = false;
+                              }
+                            });
+                          },
                         ),
                         const SizedBox(height: 10),
                         TextField(
@@ -435,9 +392,8 @@ class _TimeListScreenState extends State<TimeListScreen> {
                                   color: isDateValid ? Colors.grey : Colors.red),
                             ),
                           ),
-                          keyboardType: TextInputType.datetime,
                           onChanged: (value) {
-                            setInnerState(() {
+                            setState(() {
                               try {
                                 DateFormat('dd.MM.yyyy HH:mm').parseStrict(value);
                                 isDateValid = true;
@@ -472,7 +428,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
-                    controller: hoursController,
+                    controller: timeController,
                     decoration: InputDecoration(
                       hintText: 'HH:mm:ss.SSS',
                       errorText: isTimeValid ? null : 'Invalid time format',
@@ -481,7 +437,6 @@ class _TimeListScreenState extends State<TimeListScreen> {
                             color: isTimeValid ? Colors.grey : Colors.red),
                       ),
                     ),
-                    keyboardType: TextInputType.datetime,
                     onChanged: (value) {
                       setState(() {
                         try {
@@ -504,7 +459,6 @@ class _TimeListScreenState extends State<TimeListScreen> {
                             color: isDateValid ? Colors.grey : Colors.red),
                       ),
                     ),
-                    keyboardType: TextInputType.datetime,
                     onChanged: (value) {
                       setState(() {
                         try {
@@ -534,15 +488,10 @@ class _TimeListScreenState extends State<TimeListScreen> {
                 child: const Text('Speichern', style: TextStyle(color: Colors.white)),
                 onPressed: () {
                   if (isTimeValid && isDateValid) {
-                    String hour = hoursController.text.trim();
-                    String minutes = minutesController.text.trim();
-                    String seconds = secondsController.text.trim();
-                    String millis = millisController.text.trim();
+                    String time = timeController.text.trim();
                     String date = dateController.text.trim();
                     String name = nameController.text.trim();
                     String distance = distanceController.text.trim();
-                    
-                    String time = hour + ":" + minutes + ":" + seconds + "." + millis;
 
                     try {
 
