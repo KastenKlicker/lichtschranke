@@ -332,27 +332,147 @@ class _TimeListScreenState extends State<TimeListScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        TextEditingController timeController = TextEditingController(
-            text: timeEntry.getTimeFormatted()
+        TextEditingController hoursController = TextEditingController(
+            text: '${(timeEntry.timeInMillis ~/ (1000 * 60 * 60)) % 24}'
+        );
+        TextEditingController minutesController = TextEditingController(
+            text: '${(timeEntry.timeInMillis ~/ (1000 * 60)) % 60}'
+        );
+        TextEditingController secondsController = TextEditingController(
+            text: '${(timeEntry.timeInMillis ~/ 1000) % 60}'
+        );
+        TextEditingController millisController = TextEditingController(
+            text: '${timeEntry.timeInMillis % 1000}'
         );
         TextEditingController dateController = TextEditingController(
             text: DateFormat('dd.MM.yyyy HH:mm').format(timeEntry.date));
         TextEditingController nameController = TextEditingController(
-          text: timeEntry.name
+            text: timeEntry.name
+        );
+        TextEditingController distanceController = TextEditingController(
+            text: timeEntry.distance
         );
 
         bool isTimeValid = true;
         bool isDateValid = true;
 
-  return AlertDialog(
-    backgroundColor: Colors.white,
+        return StatefulBuilder(builder: (context, setInnerState) {
+          final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+
+          return AlertDialog(
+            backgroundColor: Colors.white,
             title: const Text('Zeiteintrag'),
-            content: StatefulBuilder(builder: (context, setState) {
-              return Column(
+            content: SingleChildScrollView(
+              child: isLandscape
+                  ? Row(
+                children: [
+                  Expanded( // Zeit- und Datum-Textfelder nebeneinander
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                maxLength: 2,
+                                controller: hoursController,
+                                decoration: const InputDecoration(
+                                  hintText: 'HH',
+                                  counterText: '',
+                                  labelText: "Stunden"
+                                ),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                maxLength: 2,
+                                controller: minutesController,
+                                decoration: const InputDecoration(
+                                    hintText: 'mm',
+                                    counterText: '',
+                                    labelText: "Minuten"
+                                ),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                maxLength: 2,
+                                controller: secondsController,
+                                decoration: const InputDecoration(
+                                    hintText: 'ss',
+                                    counterText: '',
+                                    labelText: "Sekunden"
+                                ),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                maxLength: 3,
+                                controller: millisController,
+                                decoration: const InputDecoration(
+                                    hintText: 'SSS',
+                                    counterText: '',
+                                    labelText: "Millisekunden"
+                                ),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: dateController,
+                          decoration: InputDecoration(
+                            hintText: 'dd.MM.yyyy HH:mm',
+                            errorText: isDateValid ? null : 'Invalid date format',
+                            border: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                  color: isDateValid ? Colors.grey : Colors.red),
+                            ),
+                          ),
+                          keyboardType: TextInputType.datetime,
+                          onChanged: (value) {
+                            setInnerState(() {
+                              try {
+                                DateFormat('dd.MM.yyyy HH:mm').parseStrict(value);
+                                isDateValid = true;
+                              } catch (e) {
+                                isDateValid = false;
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10), // Abstand zwischen Spalten
+                  Expanded( // Name und Distanz
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: nameController,
+                          decoration: const InputDecoration(hintText: 'Name'),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: distanceController,
+                          decoration: const InputDecoration(hintText: "Distanz"),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+                  : Column( // Hochformat-Layout (wie gewohnt)
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
-                    controller: timeController,
+                    controller: hoursController,
                     decoration: InputDecoration(
                       hintText: 'HH:mm:ss.SSS',
                       errorText: isTimeValid ? null : 'Invalid time format',
@@ -401,36 +521,49 @@ class _TimeListScreenState extends State<TimeListScreen> {
                     controller: nameController,
                     decoration: const InputDecoration(hintText: 'Name'),
                   ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: distanceController,
+                    decoration: const InputDecoration(hintText: "Distanz"),
+                  ),
                 ],
-              );
-            }),
+              ),
+            ),
             actions: [
               ElevatedButton(
                 child: const Text('Speichern', style: TextStyle(color: Colors.white)),
                 onPressed: () {
                   if (isTimeValid && isDateValid) {
-                    String time = timeController.text.trim();
+                    String hour = hoursController.text.trim();
+                    String minutes = minutesController.text.trim();
+                    String seconds = secondsController.text.trim();
+                    String millis = millisController.text.trim();
                     String date = dateController.text.trim();
                     String name = nameController.text.trim();
-  
+                    String distance = distanceController.text.trim();
+                    
+                    String time = hour + ":" + minutes + ":" + seconds + "." + millis;
+
                     try {
 
                       TimeEntry newEntry = TimeEntry(
                           date: DateFormat('dd.MM.yyyy HH:mm').parseStrict(date),
                           name: name,
-                          timeInMillis: TimeEntry.parseTimeToMilliseconds(time));
-                        if (index != -100)
-                          _deleteTime(index);
+                          timeInMillis: TimeEntry.parseTimeToMilliseconds(time),
+                          distance: distance);
+
+                      // Falls Bearbeitung eines Eintrags, wird der alte gelöscht
+                      if (index != -100) _deleteTime(index);
 
                       setState(() {
                         _times.add(newEntry);
                         _filteredTimes = List.from(_times);
                       });
-                      
+
                       _saveTimes();
                       Navigator.of(context).pop();
                     } catch (e) {
-                      // Fehler wird automatisch durch die Ränder des Textfelds angezeigt
+                      // Fehler wird automatisch durch die Tastatur angezeigt
                     }
                   }
                 },
@@ -443,8 +576,9 @@ class _TimeListScreenState extends State<TimeListScreen> {
               ),
             ],
           );
-        },
-      );
+        });
+      },
+    );
   }
 
   DateTimeRange _dateTimeRange = DateTimeRange(
@@ -576,11 +710,11 @@ class _TimeListScreenState extends State<TimeListScreen> {
   String _createCSVFile() {
 
     List<List<String>> rows = [
-      ["Name", "Datum", "Uhrzeit"] // Kopfzeile
+      ["Name", "Datum", "Uhrzeit", "Distanz"] // Kopfzeile
     ];
     
     for (var entry in _filteredTimes) {
-      rows.add([entry.name, entry.date.toIso8601String(), entry.timeInMillis.toString()]);
+      rows.add([entry.name, entry.date.toIso8601String(), entry.timeInMillis.toString(), entry.distance]);
     }
 
     // Konvertiere die Liste in CSV-Format
@@ -626,6 +760,7 @@ class _TimeListScreenState extends State<TimeListScreen> {
                   name: row[0].toString(),
                   date: DateTime.parse(row[1].toString()),
                   timeInMillis: row[2],
+                  distance: row[3]
                 )
             );
           }
