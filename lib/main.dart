@@ -741,9 +741,20 @@ class _TimeListScreenState extends State<TimeListScreen> {
               itemBuilder: (context, index) {
                 final entry = _filteredTimes[index];
                 return ListTile(
-                  title: Text(entry.name.isEmpty ? ' ' : entry.name),
+                  title: Row(
+                    children: [
+                      Text(entry.name),
+                      Expanded(child: Text(entry.distance, textAlign: TextAlign.right,))
+                    ],
+                  ),
                   // Ensure updated format displays correctly
-                  subtitle: Text('${entry.getTimeFormatted()} ${DateFormat('dd.MM.yyyy HH:mm').format(entry.date)}'),
+                  //subtitle: Text('${entry.getTimeFormatted()} ${DateFormat('dd.MM.yyyy HH:mm').format(entry.date)}'),
+                  subtitle: Row(
+                    children: [
+                      Text(entry.getTimeFormatted()),
+                      Expanded(child: Text(DateFormat('dd.MM.yyyy HH:mm').format(entry.date), textAlign: TextAlign.right,))
+                    ],
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
