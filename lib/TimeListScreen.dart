@@ -18,6 +18,15 @@ class TimeListScreen extends StatelessWidget {
           title: Stack(
             children: [
               Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                    icon: 
+                      Icon(Icons.arrow_back, color: Colors.orange,),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    }),
+              ),
+              Align(
                 alignment: Alignment.center,
                 child: Padding(
                   padding: const EdgeInsets.only(right: 46.0),

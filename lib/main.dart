@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lichtschranke/StopwatchScreen.dart';
 import 'package:provider/provider.dart';
 import 'package:lichtschranke/TimeListScreen.dart';
 import 'package:lichtschranke/AppState.dart';
@@ -80,7 +81,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Lichtschranke',
       theme: appTheme,
-      home: TimeListScreen(),
+      home: StopwatchScreen(),
     );
   }
 }

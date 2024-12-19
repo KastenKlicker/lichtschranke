@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lichtschranke/TimeListScreen.dart';
 import 'package:provider/provider.dart';
 import 'AppState.dart';
 
@@ -13,6 +14,12 @@ class StopwatchScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
+          IconButton(
+            icon: Icon(Icons.list, color: Colors.orange,),
+            onPressed: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const TimeListScreen()));
+            },),
           Text("Verbindungsstatus: ${appState.connectionStatus}"),
           ElevatedButton(
             onPressed: () {
