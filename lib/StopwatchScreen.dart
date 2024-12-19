@@ -133,7 +133,7 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
                 size: 60,
               ),
               onPressed: () {
-                appState.start(); // Timer starten
+                appState.startOverBluetooth(); // Timer starten
               },
             ),
           )

@@ -64,6 +64,10 @@ class AppState extends ChangeNotifier {
 
     notifyListeners();
   }
+  
+  void startOverBluetooth() {
+    _bluetoothClassicPlugin.write("start\n");
+  }
 
   void stop() {
     _isRunning = false;
@@ -163,7 +167,12 @@ class AppState extends ChangeNotifier {
 
     if (timeInMillis == 0) {
       return;
+    } else if (timeInMillis == 1) {
+      isRunning = true;
+      start();
+      return;
     }
+    
     if (!_isRunning) {
       start();
     }
