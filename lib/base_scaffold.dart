@@ -80,7 +80,15 @@ class BaseScaffold extends StatelessWidget {
                       appState.resetLichtschranke(context);
                     }
                   },
-                  icon: const Icon(Icons.refresh, color: Colors.black),
+                  icon: Icon(
+                      Icons.refresh,
+                      color: appState.connectionStatus ==
+                          "Verbunden mit Lichtschranke"
+                          ? Colors.green
+                          : appState.connectionStatus ==
+                          "Verbinde mit Lichtschranke..."
+                          ? Colors.orange
+                          : Colors.red,),
                 ),
               ],
             ),

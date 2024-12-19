@@ -116,7 +116,7 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
                 ),
                 IconButton(
                   icon: Icon(
-                    Icons.stop_circle,
+                    Icons.refresh,
                     color: Colors.orange,
                     size: 60,
                   ),
