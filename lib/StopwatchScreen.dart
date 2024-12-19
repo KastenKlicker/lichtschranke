@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:lichtschranke/TimeEntry.dart';
 import 'package:lichtschranke/TimeListScreen.dart';
@@ -10,13 +12,35 @@ class StopwatchScreen extends StatefulWidget {
   _StopwatchScreenState createState() => _StopwatchScreenState();
 }
 
+const List<String> distanceList = <String>[
+  "",
+  "30m",
+  "100m",
+  "150m",
+  "200m",
+  "300m",
+  "400m",
+  "500m",
+  "600m",
+  "800m",
+];
+
+typedef DistanceEntry = DropdownMenuEntry<String>;
+
 class _StopwatchScreenState extends State<StopwatchScreen> {
+
+  static final List<DistanceEntry> distanceEntries = UnmodifiableListView<DistanceEntry>(
+    distanceList.map<DistanceEntry>((String distance) => DistanceEntry(value: distance, label: distance))
+  );
+
+  String dropdownValue = distanceList.first;
+  
+  final TextEditingController distanceController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
   }
-  
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +75,20 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
         children: [
           Icon(Icons.watch_later_outlined, size: 200),
           SizedBox(height: 20),
+          DropdownMenu(
+            initialSelection: distanceList.first,
+            dropdownMenuEntries: distanceEntries,
+            label: const Text("Distanz"),
+            width: 200,
+            controller: distanceController,
+            onSelected: (String? distanceValue) {
+              if (distanceValue != dropdownValue) {
+                dropdownValue = distanceValue!;
+                appState.distance = dropdownValue;
+              }
+            },
+          ),
+          SizedBox(height: 20),
           // Anzeige der aktuellen Zeit
           Text(
             _formatElapsedTime(appState.elapsedTime),
@@ -72,8 +110,8 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
                   onPressed: () {
                     appState.addTimeEntryToSet(TimeEntry(
                         date: DateTime.now(),
-                        timeInMillis:
-                        appState.elapsedTime.inMilliseconds));
+                        timeInMillis: appState.elapsedTime.inMilliseconds,
+                        distance: appState.distance));
                   },
                 ),
                 IconButton(

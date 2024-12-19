@@ -16,6 +16,7 @@ import 'package:lichtschranke/TimeEntry.dart';
 class AppState extends ChangeNotifier {
   
   String _connectionStatus = "Nicht verbunden.";
+  String _distance = "";
   bool _isRunning = false;
   Duration _elapsedTime = Duration.zero;
   DateTime? _startTime;
@@ -34,8 +35,15 @@ class AppState extends ChangeNotifier {
   String get connectionStatus => _connectionStatus;
   bool get isRunning => _isRunning;
   Duration get elapsedTime => _elapsedTime;
+  String get distance => _distance;
   UnmodifiableListView<TimeEntry> get filteredTimes =>
       UnmodifiableListView(_filteredTimes);
+
+
+  set distance(String value) {
+    _distance = value;
+    // TODO ist notwendig? notifyListeners();
+  }
 
   set isRunning(bool value) {
     _isRunning = value;
@@ -176,7 +184,8 @@ class AppState extends ChangeNotifier {
 
     TimeEntry newEntry = TimeEntry(
         timeInMillis: timeInMillis,
-        date: DateTime.now());
+        date: DateTime.now(),
+        distance: _distance);
 
     if (_isLessThan500ms(newEntry))
       return;
