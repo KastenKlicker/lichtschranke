@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
@@ -16,6 +17,9 @@ class AppState extends ChangeNotifier {
   
   String _connectionStatus = "Nicht verbunden.";
   bool _isRunning = false;
+  Duration _elapsedTime = Duration.zero;
+  Timer? _timer;
+  
   SplayTreeSet<TimeEntry> timeEntries = SplayTreeSet();
   List<TimeEntry> _filteredTimes = [];
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
@@ -28,16 +32,39 @@ class AppState extends ChangeNotifier {
   // Getter
   String get connectionStatus => _connectionStatus;
   bool get isRunning => _isRunning;
+  Duration get elapsedTime => _elapsedTime;
   UnmodifiableListView<TimeEntry> get filteredTimes =>
       UnmodifiableListView(_filteredTimes);
 
+  set isRunning(bool value) {
+    _isRunning = value;
+  }
+
   void start() {
     _isRunning = true;
+
+    _timer = Timer.periodic(const Duration(milliseconds: 1), (timer) {
+      _elapsedTime += const Duration(milliseconds: 1);
+      notifyListeners();
+    });
+    
     notifyListeners();
   }
 
   void stop() {
     _isRunning = false;
+
+    // Timer stoppen
+    _timer?.cancel();
+    _timer = null;
+    
+    _elapsedTime = Duration.zero;
+    notifyListeners();
+  }
+
+  void addTimeEntryToSet(TimeEntry timeEntry) {
+    timeEntries.add(timeEntry);
+    _filteredTimes = List.from(timeEntries);
     notifyListeners();
   }
 
@@ -121,10 +148,20 @@ class AppState extends ChangeNotifier {
     int timeInMillis = int.parse(timeInMillisStr);
 
     if (timeInMillis == 0) {
-      stop();
       return;
     }
-    start();
+    if (!_isRunning) {
+      start();
+    }
+
+    _elapsedTime = Duration(milliseconds: timeInMillis);
+
+    // Reset Timer, um ab neuem Wert weiterzählen
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(milliseconds: 1), (timer) {
+      _elapsedTime += const Duration(milliseconds: 1);
+      notifyListeners();
+    });
 
     TimeEntry newEntry = TimeEntry(
         timeInMillis: timeInMillis,
@@ -143,6 +180,7 @@ class AppState extends ChangeNotifier {
   }
 
   void resetLichtschranke(BuildContext context) {
+    stop();
     if (_connectionStatus != "Verbunden mit Lichtschranke") return;
 
     _bluetoothClassicPlugin.write("reset\n");

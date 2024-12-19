@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:lichtschranke/TimeEntry.dart';
 import 'package:lichtschranke/TimeListScreen.dart';
 import 'package:lichtschranke/base_scaffold.dart';
 import 'package:provider/provider.dart';
@@ -11,52 +12,41 @@ class StopwatchScreen extends StatefulWidget {
 }
 
 class _StopwatchScreenState extends State<StopwatchScreen> {
-  Timer? _timer; // Optionaler Timer
-  late DateTime _startTime; // Startzeitpunkt
-  late Duration _elapsedTime; // Gespeicherte Dauer
-  Duration _currentDuration = Duration.zero; // Aktuelle Dauer (inkl. ms)
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _elapsedTime = Duration.zero; // Initialisierte Dauer
-    _startTimerIfNeeded();
+    _startTimerIfNeeded(); // Start/Tick-Logik direkt initialisieren
   }
 
   void _startTimerIfNeeded() {
     final appState = Provider.of<AppState>(context, listen: false);
 
     if (appState.isRunning) {
-      // Timer starten, wenn _isRunning true ist
-      _startTime = DateTime.now().subtract(_elapsedTime); // Startzeit berechnen
+      // Wenn die Stoppuhr läuft, Timer starten
       _timer ??= Timer.periodic(Duration(milliseconds: 10), (timer) {
-        setState(() {
-          // Differenz zwischen aktueller Zeit und Startzeit berechnen
-          _currentDuration = DateTime.now().difference(_startTime);
-        });
+        setState(() {});
       });
     } else {
-      // Timer stoppen, wenn _isRunning false ist
+      // Timer stoppen
       _timer?.cancel();
       _timer = null;
-      _elapsedTime = _currentDuration; // Elapsed Time speichern
     }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Überwacht Änderungen im AppState
     final appState = Provider.of<AppState>(context);
-    appState.addListener(_startTimerIfNeeded);
+    appState.addListener(_startTimerIfNeeded); // Timer-Logik bei Updates auslösen
   }
 
   @override
   void dispose() {
-    // Cleanup: Timer und Listener entfernen
     _timer?.cancel();
     final appState = Provider.of<AppState>(context, listen: false);
-    appState.removeListener(_startTimerIfNeeded);
+    appState.removeListener(_startTimerIfNeeded); // Listener entfernen
     super.dispose();
   }
 
@@ -92,37 +82,65 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
       body: Column(
         children: [
           Icon(Icons.watch_later_outlined, size: 200),
-          SizedBox(height: 20), // Platz für den Text
+          SizedBox(height: 20),
+          // Anzeige der aktuellen Zeit
           Text(
-            _formatElapsedTime(), // Formatiert die Zeit in hh:mm:ss:ms
+            _formatElapsedTime(appState.elapsedTime),
             style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              // Toggle des _isRunning-Status im AppState
-              if (appState.isRunning) {
-                appState.stop();
-              } else {
-                appState.start();
-              }
-            },
-            child: appState.isRunning ? Text("Stop") : Text("Start"),
-          ),
+          // Start-/Stopp-Steuerelemente
+          Center(
+            child: appState.isRunning
+                ? Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.add_circle,
+                    color: Colors.orange,
+                  ),
+                  onPressed: () {
+                    appState.addTimeEntryToSet(TimeEntry(
+                        date: DateTime.now(),
+                        timeInMillis:
+                        appState.elapsedTime.inMilliseconds));
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.stop_circle,
+                    color: Colors.orange,
+                  ),
+                  onPressed: () {
+                    appState.stop(); // Stoppuhr stoppen
+                  },
+                ),
+              ],
+            )
+                : IconButton(
+              icon: Icon(
+                Icons.play_circle,
+                color: Colors.orange,
+              ),
+              onPressed: () {
+                appState.start(); // Timer starten
+              },
+            ),
+          )
         ],
       ),
     );
   }
 
-  // Helfer-Funktion zur Formatierung der Zeit in hh:mm:ss:ms
-  String _formatElapsedTime() {
-    final hours = _currentDuration.inHours.toString().padLeft(2, '0');
+  String _formatElapsedTime(Duration elapsedTime) {
+    final hours = elapsedTime.inHours.toString().padLeft(2, '0');
     final minutes =
-    _currentDuration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    elapsedTime.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds =
-    _currentDuration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    elapsedTime.inSeconds.remainder(60).toString().padLeft(2, '0');
     final milliseconds =
-    (_currentDuration.inMilliseconds.remainder(1000) ~/ 10)
+    (elapsedTime.inMilliseconds.remainder(1000) ~/ 10)
         .toString()
         .padLeft(2, '0');
     return "$hours:$minutes:$seconds:$milliseconds";
