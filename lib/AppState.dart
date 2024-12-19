@@ -15,6 +15,7 @@ import 'package:lichtschranke/TimeEntry.dart';
 class AppState extends ChangeNotifier {
   
   String _connectionStatus = "Nicht verbunden.";
+  bool _isRunning = false;
   SplayTreeSet<TimeEntry> timeEntries = SplayTreeSet();
   List<TimeEntry> _filteredTimes = [];
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
@@ -26,8 +27,19 @@ class AppState extends ChangeNotifier {
 
   // Getter
   String get connectionStatus => _connectionStatus;
+  bool get isRunning => _isRunning;
   UnmodifiableListView<TimeEntry> get filteredTimes =>
       UnmodifiableListView(_filteredTimes);
+
+  void start() {
+    _isRunning = true;
+    notifyListeners();
+  }
+
+  void stop() {
+    _isRunning = false;
+    notifyListeners();
+  }
 
   // Constructor
   AppState() {
@@ -109,8 +121,10 @@ class AppState extends ChangeNotifier {
     int timeInMillis = int.parse(timeInMillisStr);
 
     if (timeInMillis == 0) {
+      stop();
       return;
     }
+    start();
 
     TimeEntry newEntry = TimeEntry(
         timeInMillis: timeInMillis,
