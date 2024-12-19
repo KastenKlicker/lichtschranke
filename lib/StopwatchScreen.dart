@@ -67,6 +67,7 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
                   icon: Icon(
                     Icons.add_circle,
                     color: Colors.orange,
+                    size: 60,
                   ),
                   onPressed: () {
                     appState.addTimeEntryToSet(TimeEntry(
@@ -79,6 +80,7 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
                   icon: Icon(
                     Icons.stop_circle,
                     color: Colors.orange,
+                    size: 60,
                   ),
                   onPressed: () {
                     appState.stop(); // Stoppuhr stoppen
@@ -90,6 +92,7 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
               icon: Icon(
                 Icons.play_circle,
                 color: Colors.orange,
+                size: 60,
               ),
               onPressed: () {
                 appState.start(); // Timer starten
