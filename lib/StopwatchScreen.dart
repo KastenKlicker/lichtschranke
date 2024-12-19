@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lichtschranke/TimeEntry.dart';
 import 'package:lichtschranke/TimeListScreen.dart';
@@ -12,43 +11,12 @@ class StopwatchScreen extends StatefulWidget {
 }
 
 class _StopwatchScreenState extends State<StopwatchScreen> {
-  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _startTimerIfNeeded(); // Start/Tick-Logik direkt initialisieren
   }
-
-  void _startTimerIfNeeded() {
-    final appState = Provider.of<AppState>(context, listen: false);
-
-    if (appState.isRunning) {
-      // Wenn die Stoppuhr läuft, Timer starten
-      _timer ??= Timer.periodic(Duration(milliseconds: 10), (timer) {
-        setState(() {});
-      });
-    } else {
-      // Timer stoppen
-      _timer?.cancel();
-      _timer = null;
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final appState = Provider.of<AppState>(context);
-    appState.addListener(_startTimerIfNeeded); // Timer-Logik bei Updates auslösen
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    final appState = Provider.of<AppState>(context, listen: false);
-    appState.removeListener(_startTimerIfNeeded); // Listener entfernen
-    super.dispose();
-  }
+  
 
   @override
   Widget build(BuildContext context) {

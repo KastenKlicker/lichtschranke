@@ -18,6 +18,7 @@ class AppState extends ChangeNotifier {
   String _connectionStatus = "Nicht verbunden.";
   bool _isRunning = false;
   Duration _elapsedTime = Duration.zero;
+  DateTime? _startTime;
   Timer? _timer;
   
   SplayTreeSet<TimeEntry> timeEntries = SplayTreeSet();
@@ -42,23 +43,28 @@ class AppState extends ChangeNotifier {
 
   void start() {
     _isRunning = true;
+    _startTime = _startTime ?? DateTime.now().subtract(_elapsedTime);
 
+    // Aktualisiere _elapsedTime basierend auf Systemzeit
     _timer = Timer.periodic(const Duration(milliseconds: 1), (timer) {
-      _elapsedTime += const Duration(milliseconds: 1);
-      notifyListeners();
+      final now = DateTime.now();
+      if (_startTime != null) {
+        _elapsedTime = now.difference(_startTime!);
+        notifyListeners();
+      }
     });
-    
+
     notifyListeners();
   }
 
   void stop() {
     _isRunning = false;
-
-    // Timer stoppen
     _timer?.cancel();
     _timer = null;
-    
+
+    _startTime = null; // Startzeitpunkt zurücksetzen
     _elapsedTime = Duration.zero;
+
     notifyListeners();
   }
 
@@ -154,13 +160,18 @@ class AppState extends ChangeNotifier {
       start();
     }
 
+    // setzen und Timer hochpräzise neu starten, ab neuem Wert weiterzählen
     _elapsedTime = Duration(milliseconds: timeInMillis);
+    _startTime = DateTime.now().subtract(_elapsedTime); // Reset Startzeit
 
-    // Reset Timer, um ab neuem Wert weiterzählen
+    // Timer neu starten
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(milliseconds: 1), (timer) {
-      _elapsedTime += const Duration(milliseconds: 1);
-      notifyListeners();
+      final now = DateTime.now();
+      if (_startTime != null) {
+        _elapsedTime = now.difference(_startTime!);
+        notifyListeners();
+      }
     });
 
     TimeEntry newEntry = TimeEntry(
