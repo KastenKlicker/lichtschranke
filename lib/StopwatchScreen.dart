@@ -82,8 +82,8 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
             width: 200,
             controller: distanceController,
             onSelected: (String? distanceValue) {
-              if (distanceValue != dropdownValue) {
-                dropdownValue = distanceValue!;
+              if (distanceController.text != dropdownValue) {
+                dropdownValue = distanceController.text;
                 appState.distance = dropdownValue;
               }
             },
