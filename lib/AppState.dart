@@ -165,6 +165,7 @@ class AppState extends ChangeNotifier {
     
     int timeInMillis = int.parse(timeInMillisStr);
 
+    // 0 == ack of reset, 1 == ack of reset
     if (timeInMillis == 0) {
       return;
     } else if (timeInMillis == 1) {
