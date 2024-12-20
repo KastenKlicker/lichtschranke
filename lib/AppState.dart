@@ -167,13 +167,9 @@ class AppState extends ChangeNotifier {
     timeInMillisStr = timeInMillisStr.split("\n")[0];
     timeInMillisStr.replaceAll(new RegExp(r"\D"), "");
     
-    if (timeInMillisStr.contains("Reset") || timeInMillisStr.isEmpty) {
-      return;
-    }
-    
     int timeInMillis = int.parse(timeInMillisStr);
 
-    // 0 == ack of reset, 1 == ack of reset
+    // 0 == ack of reset, 1 == ack of start
     if (timeInMillis == 0) {
       _isReset = true;
       notifyListeners();
@@ -224,7 +220,8 @@ class AppState extends ChangeNotifier {
 
     _bluetoothClassicPlugin.write("reset\n");
 
-    await Future.delayed(Duration(seconds: 5));
+    while (!_isReset)
+      await Future.delayed(Duration(milliseconds: 100));
     
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(
