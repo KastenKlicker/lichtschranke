@@ -5,6 +5,7 @@ import 'package:lichtschranke/TimeEntry.dart';
 import 'package:lichtschranke/TimeListScreen.dart';
 import 'package:lichtschranke/base_scaffold.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'AppState.dart';
 
 class StopwatchScreen extends StatefulWidget {
@@ -121,7 +122,7 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
                     size: 60,
                   ),
                   onPressed: () {
-                    appState.stop(); // Stoppuhr stoppen
+                    appState.stop(context); // Stoppuhr stoppen
                   },
                 ),
               ],
@@ -136,7 +137,55 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
                 appState.startOverBluetooth(); // Timer starten
               },
             ),
-          )
+          ),
+          SizedBox(height: 10,),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 250,
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.orange, width: 2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: (appState.filteredTimes.isNotEmpty)? Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(appState.filteredTimes.first.name,
+                          textAlign: TextAlign.left,),
+                        Text(appState.filteredTimes.first.distance,
+                          textAlign: TextAlign.right,)
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(appState.filteredTimes.first.getTimeFormatted(),
+                          textAlign: TextAlign.left,),
+                        Text(DateFormat('dd.MM.yyyy HH:mm').format(appState.filteredTimes.first.date),
+                          textAlign: TextAlign.right,)
+                      ],
+                    ),
+                  ],
+                ) : Text("Keine Zeit vorhanden"),
+              ),
+              Positioned(
+                top: -10, // Text schwebt über der Linie
+                left: 20, // Positionierung des Textes
+                child: Container(
+                  color: Colors.white, // Hintergrundfarbe des Textes, damit er die Linie "unterbricht"
+                  padding: EdgeInsets.symmetric(horizontal: 5),
+                  child: Text(
+                    "Letzte Zeit", // Dein Beschriftungstext
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

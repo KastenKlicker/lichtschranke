@@ -18,6 +18,7 @@ class AppState extends ChangeNotifier {
   String _connectionStatus = "Nicht verbunden.";
   String _distance = "";
   bool _isRunning = false;
+  bool _isReset = false;
   Duration _elapsedTime = Duration.zero;
   DateTime? _startTime;
   Timer? _timer;
@@ -66,16 +67,23 @@ class AppState extends ChangeNotifier {
   }
   
   void startOverBluetooth() {
-    _bluetoothClassicPlugin.write("start\n");
+    if (_connectionStatus == "Verbunden mit Lichtschranke")
+      _bluetoothClassicPlugin.write("start\n");
+    else
+      start();
   }
 
-  void stop() {
+  void stop(BuildContext context) {
     _isRunning = false;
     _timer?.cancel();
     _timer = null;
 
     _startTime = null; // Startzeitpunkt zurücksetzen
     _elapsedTime = Duration.zero;
+    
+    if  (_connectionStatus == "Verbunden mit Lichtschranke") {
+      resetLichtschranke(context);
+    }
 
     notifyListeners();
   }
@@ -167,6 +175,8 @@ class AppState extends ChangeNotifier {
 
     // 0 == ack of reset, 1 == ack of reset
     if (timeInMillis == 0) {
+      _isReset = true;
+      notifyListeners();
       return;
     } else if (timeInMillis == 1) {
       isRunning = true;
@@ -209,15 +219,18 @@ class AppState extends ChangeNotifier {
     _saveTimes(); // TODO Useless?
   }
 
-  void resetLichtschranke(BuildContext context) {
-    stop();
+  Future<void> resetLichtschranke(BuildContext context) async {
     if (_connectionStatus != "Verbunden mit Lichtschranke") return;
 
     _bluetoothClassicPlugin.write("reset\n");
 
+    await Future.delayed(Duration(seconds: 5));
+    
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(
-        content: const Text('Lichtschranke wurde zurückgesetzt'),
+        content:
+          _isReset ? const Text('Lichtschranke wurde zurückgesetzt.') :
+          const Text('Fehler beim zurücksetzen der Lichtschranke!'),
         actions: [
           TextButton(
             onPressed: () {
@@ -228,6 +241,8 @@ class AppState extends ChangeNotifier {
         ],
       ),
     );
+    
+    _isReset = false;
   }
 
   Future<void> selectDateRange(BuildContext context) async {

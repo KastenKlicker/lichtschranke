@@ -75,10 +75,7 @@ class BaseScaffold extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () {
-                    if (appState.connectionStatus ==
-                        "Verbunden mit Lichtschranke") {
-                      appState.resetLichtschranke(context);
-                    }
+                    appState.stop(context);
                   },
                   icon: Icon(
                       Icons.refresh,
