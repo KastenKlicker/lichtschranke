@@ -86,7 +86,6 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
               if (distanceController.text != dropdownValue) {
                 dropdownValue = distanceController.text;
                 appState.distance = dropdownValue;
-                // TODO NotifyListener
               }
             },
           ),

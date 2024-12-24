@@ -43,7 +43,7 @@ class AppState extends ChangeNotifier {
 
   set distance(String value) {
     _distance = value;
-    // TODO ist notwendig? notifyListeners();
+    notifyListeners();
   }
 
   set isRunning(bool value) {
