@@ -1,6 +1,6 @@
 class TimeEntry implements Comparable<TimeEntry>{
 
-  DateTime date; // Added field for date
+  DateTime date;
   String name;
   String distance;
   int timeInMillis;
@@ -10,7 +10,7 @@ class TimeEntry implements Comparable<TimeEntry>{
     required this.timeInMillis,
     this.name = '',
     this.distance = ''
-  }); // Ensure usage of updated format
+  });
 
   Map<String, String> toMap() {
     return {
@@ -31,10 +31,10 @@ class TimeEntry implements Comparable<TimeEntry>{
   }
 
   String getTimeFormatted() {
-    final hours = (timeInMillis ~/ (1000 * 60 * 60)) % 24; // Stunden
-    final minutes = (timeInMillis ~/ (1000 * 60)) % 60; // Minuten
-    final seconds = (timeInMillis ~/ 1000) % 60; // Sekunden
-    final millis = timeInMillis % 1000; // Millisekunden
+    final hours = (timeInMillis ~/ (1000 * 60 * 60)) % 24;
+    final minutes = (timeInMillis ~/ (1000 * 60)) % 60;
+    final seconds = (timeInMillis ~/ 1000) % 60;
+    final millis = timeInMillis % 1000;
 
     // Formatierung mit führenden Nullen
     final formattedHours = hours.toString().padLeft(2, '0');
@@ -46,44 +46,44 @@ class TimeEntry implements Comparable<TimeEntry>{
   }
 
   static int parseTimeToMilliseconds(String time) {
-    // Splitte den String in Stunden, Minuten, Sekunden und Millisekunden
+    // Split the String in the different time units
     final parts = time.split(RegExp(r'[:.]'));
 
     if (parts.length != 4) {
       throw FormatException('Das Zeitformat muss "HH:mm:ss.SSS" sein');
     }
 
-    // Teile in Integer umwandeln
+    // Parse time units to numbers
     final hours = int.parse(parts[0]);
     final minutes = int.parse(parts[1]);
     final seconds = int.parse(parts[2]);
     final milliseconds = int.parse(parts[3]);
 
-    // Umrechnung in Millisekunden
+    // Calculate time in milliseconds
     int totalMilliseconds =
-        (hours * 60 * 60 * 1000) + // Stunden -> Millisekunden
-            (minutes * 60 * 1000) +   // Minuten -> Millisekunden
-            (seconds * 1000) +        // Sekunden -> Millisekunden
-            milliseconds;             // Millisekunden direkt
+        (hours * 60 * 60 * 1000) + // hours -> milliseconds
+            (minutes * 60 * 1000) +   // minutes -> milliseconds
+            (seconds * 1000) +        // seconds -> milliseconds
+            milliseconds;             // milliseconds stay milliseconds
 
     return totalMilliseconds;
   }
 
   @override
   int compareTo(TimeEntry other) {
-    // Invertiere den Vergleich nach Datum
+    // Compare date
     final int dateComparison = other.date.compareTo(this.date);
     if (dateComparison != 0) {
       return dateComparison;
     }
 
-    // Invertiere den Vergleich nach Zeit in Millisekunden
+    // Compare time
     final int timeComparison = other.timeInMillis.compareTo(this.timeInMillis);
     if (timeComparison != 0) {
       return timeComparison;
     }
 
-    // Zuletzt den Vergleich nach Name (alphabetisch absteigend)
+    // Compare name
     return this.name.compareTo(other.name);
   }
 }

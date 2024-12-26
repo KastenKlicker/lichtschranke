@@ -10,7 +10,6 @@ class TimeListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Zugriff auf den AppState
     final appState = Provider.of<AppState>(context);
 
     return BaseScaffold(

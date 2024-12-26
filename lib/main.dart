@@ -5,8 +5,6 @@ import 'package:lichtschranke/TimeListScreen.dart';
 import 'package:lichtschranke/AppState.dart';
 
 
-// TODO Start über Smartphone
-
 void main() {
   runApp(ChangeNotifierProvider(
     create: (context) => AppState(),
@@ -63,12 +61,12 @@ ThemeData appTheme = ThemeData(
     dividerColor: Colors.red
   ),
   textTheme: TextTheme(
-    bodyLarge: TextStyle(color: Colors.black), // Standard Texte auf Schwarz für Lesbarkeit
-    bodyMedium: TextStyle(color: Colors.black87), // Abgeschwächter Standardtext
+    bodyLarge: TextStyle(color: Colors.black),
+    bodyMedium: TextStyle(color: Colors.black87),
   ),
   textSelectionTheme: TextSelectionThemeData(
     cursorColor: Colors.orange,
-    selectionColor: Colors.orange[300], // Markierungsfarbe für ausgewählten Text
+    selectionColor: Colors.orange[300],
     selectionHandleColor: Colors.orange,
   ),
 );

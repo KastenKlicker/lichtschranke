@@ -173,13 +173,13 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
                 ) : Text("Keine Zeit vorhanden"),
               ),
               Positioned(
-                top: -10, // Text schwebt über der Linie
-                left: 20, // Positionierung des Textes
+                top: -10,
+                left: 20,
                 child: Container(
-                  color: Colors.white, // Hintergrundfarbe des Textes, damit er die Linie "unterbricht"
+                  color: Colors.white,
                   padding: EdgeInsets.symmetric(horizontal: 5),
                   child: Text(
-                    "Letzte Zeit", // Dein Beschriftungstext
+                    "Letzte Zeit",
                     style: TextStyle(fontSize: 16),
                   ),
                 ),

@@ -19,15 +19,15 @@ class BaseScaffold extends StatelessWidget {
     final appState = Provider.of<AppState>(context);
 
     return Scaffold(
-      appBar: appBar, // AppBar kann vom Screen definiert werden
+      appBar: appBar, // AppBar, is set by the current screen
       floatingActionButton: floatingActionButton,
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Hauptbereich, in den spezifische Inhalte eingefügt werden
+          // Body, is set by the current screen
           Expanded(child: body),
 
-          // Gemeinsame Verbindungsanzeige am unteren Rand
+          // Bluetooth Connection status at the bottom of the screen
           Container(
             color: appState.connectionStatus == "Verbunden mit Lichtschranke"
                 ? Colors.green[200]

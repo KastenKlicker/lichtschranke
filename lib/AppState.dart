@@ -50,11 +50,17 @@ class AppState extends ChangeNotifier {
     _isRunning = value;
   }
 
+  // Constructor
+  AppState() {
+    _loadTimes();
+    _initializeBluetooth();
+  }
+
   void start() {
     _isRunning = true;
-    _startTime = _startTime ?? DateTime.now().subtract(_elapsedTime);
+    _startTime = _startTime ?? DateTime.now().subtract(_elapsedTime); // If startTime is null, calculate startTime
 
-    // Aktualisiere _elapsedTime basierend auf Systemzeit
+    // Update timer based on system time every millisecond
     _timer = Timer.periodic(const Duration(milliseconds: 1), (timer) {
       final now = DateTime.now();
       if (_startTime != null) {
@@ -65,7 +71,7 @@ class AppState extends ChangeNotifier {
 
     notifyListeners();
   }
-  
+
   void startOverBluetooth() {
     if (_connectionStatus == "Verbunden mit Lichtschranke")
       _bluetoothClassicPlugin.write("start\n");
@@ -80,7 +86,7 @@ class AppState extends ChangeNotifier {
 
     _startTime = null; // Startzeitpunkt zurücksetzen
     _elapsedTime = Duration.zero;
-    
+
     if  (_connectionStatus == "Verbunden mit Lichtschranke") {
       resetLichtschranke(context);
     }
@@ -90,25 +96,16 @@ class AppState extends ChangeNotifier {
 
   void addTimeEntryToSet(TimeEntry timeEntry) {
     timeEntries.add(timeEntry);
-    _filteredTimes = List.from(timeEntries);
+    _filteredTimes = List.from(timeEntries);  // Update filteredTimes
     notifyListeners();
-  }
-
-  // Constructor
-  AppState() {
-    _loadTimes();
-    _initializeBluetooth();
   }
 
   Future<void> _initializeBluetooth() async {
 
     // TODO Nicht nur am Anfang prüfen
-
-    // Zugriff auf Bluetooth-Erlaubnis
+    
     await _bluetoothClassicPlugin.initPermissions();
-    // Verbindung mit dem Bluetooth-Gerät herstellen
-
-    // Lichtschranke mit Name finden
+    
     List<Device> deviceList = await _bluetoothClassicPlugin.getPairedDevices();
 
     List<String> deviceNames = <String>[];
@@ -117,12 +114,13 @@ class AppState extends ChangeNotifier {
       deviceNames.add(device.name!);
     }
 
+    // Check if Lichtschranke is connected with the device
     if (!deviceNames.contains("Lichtschranke")) {
       _connectionStatus = "Lichtschranke nicht gefunden.";
       notifyListeners();
       return;
     }
-
+    
     lichtschranke = deviceList.where((device) => device.name == "Lichtschranke").first;
 
     _bluetoothClassicPlugin.onDeviceStatusChanged().listen((status) {
@@ -153,6 +151,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Checks if the latest TimeEntry is younger than 500ms
   bool _isLessThan500ms(TimeEntry newEntry) {
     return timeEntries.any((entry) {
       if (entry.compareTo(newEntry) == 0) return false;
@@ -161,7 +160,9 @@ class AppState extends ChangeNotifier {
     });
   }
 
-  void _handleData(Uint8List event) async {    
+  /// Handles Data incoming over Bluetooth
+  void _handleData(Uint8List event) async {  
+    // Get the numbers out of the incoming chars
     String timeInMillisStr = String.fromCharCodes(event);
     
     timeInMillisStr = timeInMillisStr.split("\n")[0];
@@ -180,15 +181,16 @@ class AppState extends ChangeNotifier {
       return;
     }
     
+    // Start the timer if a new time was received, but the timer wasn't running
     if (!_isRunning) {
       start();
     }
 
-    // setzen und Timer hochpräzise neu starten, ab neuem Wert weiterzählen
+    // To display the most precise time, set the time the same as the received 
     _elapsedTime = Duration(milliseconds: timeInMillis);
-    _startTime = DateTime.now().subtract(_elapsedTime); // Reset Startzeit
+    _startTime = DateTime.now().subtract(_elapsedTime);
 
-    // Timer neu starten
+    // Reset Timer TODO Useless?
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(milliseconds: 1), (timer) {
       final now = DateTime.now();
@@ -206,12 +208,11 @@ class AppState extends ChangeNotifier {
     if (_isLessThan500ms(newEntry))
       return;
 
-      // Fügen Sie den empfangenen Zeitstempel zur Liste hinzu
+      // Add timeEntry, to Set
     timeEntries.add(newEntry);
     _filteredTimes = List.from(timeEntries);
     notifyListeners();
     
-    // Zum Speichern der neuen Einträge aufrufen
     _saveTimes(); // TODO Useless?
   }
 
@@ -220,6 +221,7 @@ class AppState extends ChangeNotifier {
 
     _bluetoothClassicPlugin.write("reset\n");
 
+    // Wait for reset ack
     while (!_isReset)
       await Future.delayed(Duration(milliseconds: 100));
     
@@ -242,16 +244,15 @@ class AppState extends ChangeNotifier {
     _isReset = false;
   }
 
+  /// Filters the TimeEntries by recorded Date
   Future<void> selectDateRange(BuildContext context) async {
-    // Öffne den Datumsbereich-Picker
     DateTimeRange? selectedDateRange = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2020), // frühester auswählbarer Zeitpunkt
-      lastDate: DateTime(2100), // spätester auswählbarer Zeitpunkt
-      initialDateRange: initialDateRange, // standardmäßig eingestellter Bereich
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDateRange: initialDateRange,
     );
-
-    // Wenn ein Datum ausgewählt wurde, filtere die Einträge entsprechend
+    
     if (selectedDateRange != null) {
       filterByDateRange(selectedDateRange);
       initialDateRange = selectedDateRange;
@@ -267,6 +268,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Loads time from internal storage
   Future<void> _loadTimes() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String>? timeStringList = prefs.getStringList('times');
@@ -280,19 +282,24 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Save times to storage
   Future<void> _saveTimes() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Nur Zeiten mit Namen speichern
-    List<TimeEntry> timesWithName = timeEntries.where((entry) => entry.name.trim().isNotEmpty).toList();
+    // Just save times to storage with name - deactivate the next statement if wanted
+    //List<TimeEntry> timesWithName = timeEntries.where((entry) => entry.name.trim().isNotEmpty).toList();
+    
+    // Save all times
+    List<TimeEntry> timesWithName = timeEntries.toList();
 
-    // Zeiten serialisieren und speichern
+    // Encode TimeEntries
     List<String> encodedTimes = timesWithName.map((entry) => json.encode(entry.toMap())).toList();
 
+    // Save times
     await prefs.setStringList('times', encodedTimes);
   }
 
-  /// Zeit-Einträge manipulieren
+  /// Filter TimeEntries by name
   void filterTimes(String query) {
     _filteredTimes = timeEntries
         .where((entry) => entry.name.toLowerCase().contains(query.toLowerCase()))
@@ -300,6 +307,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Delete Time by filteredTimes index
   void deleteTime(int index) {
     TimeEntry timeEntry = _filteredTimes[index];
     _filteredTimes.removeAt(index);
@@ -311,6 +319,7 @@ class AppState extends ChangeNotifier {
     _saveTimes();
   }
 
+  /// Show the Editing Dialog for the chosen TimeEntry or if index = -100, a new one
   void showEntryDialog(BuildContext context, TimeEntry timeEntry,
       {int index = -100}) {
     showDialog(
@@ -341,7 +350,7 @@ class AppState extends ChangeNotifier {
               child: isLandscape
                   ? Row(
                 children: [
-                  Expanded( // Zeit- und Datum-Textfelder nebeneinander
+                  Expanded(
                     child: Column(
                       children: [
                         TextField(
@@ -388,8 +397,8 @@ class AppState extends ChangeNotifier {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10), // Abstand zwischen Spalten
-                  Expanded( // Name und Distanz
+                  const SizedBox(width: 10),
+                  Expanded(
                     child: Column(
                       children: [
                         TextField(
@@ -406,7 +415,7 @@ class AppState extends ChangeNotifier {
                   ),
                 ],
               )
-                  : Column( // Hochformat-Layout (wie gewohnt)
+                  : Column( // Portrait mode
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
@@ -480,9 +489,10 @@ class AppState extends ChangeNotifier {
                           timeInMillis: TimeEntry.parseTimeToMilliseconds(time),
                           distance: distance);
 
-                      // Falls Bearbeitung eines Eintrags, wird der alte gelöscht
+                      // If the edited TimeEntry is an existing one, then delete the old one
                       if (index != -100) deleteTime(index);
 
+                      // Create the new TimeEntry
                       timeEntries.add(newEntry);
                       _filteredTimes = List.from(timeEntries);
                       notifyListeners();
@@ -490,7 +500,7 @@ class AppState extends ChangeNotifier {
                       _saveTimes();
                       Navigator.of(context).pop();
                     } catch (e) {
-                      // Fehler wird automatisch durch die Tastatur angezeigt
+                      // Some type of Error ig
                     }
                   }
                 },
@@ -560,27 +570,26 @@ class AppState extends ChangeNotifier {
           );
         },
       );
-
-      // Erstelle den CSV-Inhalt aus den gefilterten Zeiten (_filteredTimes)
+      
       String? selectedDirectory = await _selectExportDirectory();
-      if (selectedDirectory == null) return; // Abbruch, falls Benutzer nichts auswählt
+      if (selectedDirectory == null) return; // Return if user doesn't choose a directory
 
       String csv = _createCSVFile();
 
-      // Speichere die Datei im Downloads-Ordner
+      // Save the file
       String fileName = fileNameController.text.trim();
       if (fileName.isEmpty) fileName = 'lichtschranke_export.csv';
       final file = File('$selectedDirectory/$fileName');
       await file.writeAsString(csv);
 
-      // Erfolgsmeldung anzeigen
+      // Success dialog
       _showMenuDialog(context, 'Datei wurde unter: ${file.path} gespeichert.');
     } catch (e) {
-      // Fehlerbehandlung
+      // Error Dialog
       _showMenuDialog(context, 'Export fehlgeschlagen: $e');
     }
   }
-
+  
   Future<String?> _selectExportDirectory() async {
     Directory downloadsDirectory = Directory('~/Downloads');
     String initialDirectoryPath = downloadsDirectory.path;
@@ -596,19 +605,20 @@ class AppState extends ChangeNotifier {
   String _createCSVFile() {
 
     List<List<String>> rows = [
-      ["Name", "Datum", "Zeit", "Distanz"] // Kopfzeile
+      ["Name", "Datum", "Zeit", "Distanz"] // Header
     ];
 
+    // Add entries from filtered Times to CSV Data structure
     for (var entry in _filteredTimes) {
       rows.add([entry.name, entry.date.toIso8601String(), entry.timeInMillis.toString(), entry.distance]);
     }
 
-    // Konvertiere die Liste in CSV-Format
+    // Convert list to CSV
     String csv = const ListToCsvConverter().convert(rows);
 
     return csv;
   }
-
+  
   Future<String?> selectExportDirectory() async {
     Directory downloadsDirectory = Directory('~/Downloads');
     String initialDirectoryPath = downloadsDirectory.path;
@@ -623,15 +633,21 @@ class AppState extends ChangeNotifier {
 
   Future<void> shareFilteredTimes() async {
     String csv = _createCSVFile();
+    
+    // Create a temporary file from the CSV for the share Dialog
     Share.shareXFiles([XFile.fromData(utf8.encode(csv), mimeType: "text/csv")], fileNameOverrides: ["LichtschrankeExport.csv"]);
   }
 
   Future<void> importCSV(BuildContext context) async {
+    
+    // Let the user pick a CSV file
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
+
+      // If a file is selected, parse file into TimeEntry list
       if (result != null && result.files.single.path != null) {
         String filePath = result.files.single.path!;
         final file = File(filePath);
@@ -652,6 +668,7 @@ class AppState extends ChangeNotifier {
           }
         }
 
+        // Save times
         timeEntries.addAll(importedTimes);
         _filteredTimes = List.from(timeEntries);
         notifyListeners();
@@ -666,6 +683,8 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Set connection status TODO Not used
+  @Deprecated("Not used, might be removed later on")
   void updateConnectionStatus(String status) {
     _connectionStatus = status;
     notifyListeners();
