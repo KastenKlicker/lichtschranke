@@ -1,16 +1,14 @@
 # lichtschranke
 
-A new Flutter project.
+This Flutter application is part of a time measurment system for track & field training runs.
 
-## Getting Started
+The application is currently only tested with fairly new Samsung smartphones and tablets.
 
-This project is a starting point for a Flutter application.
+### How it works
+Power on the goal light barrier and connect your smartphone with the Bluetooth device "Lichtschranke".
+After the Lichtschranke is paired with your smartphone open the app and tap on the Bluetooth symbol in the bottom left corner.
+The status bar at the bottom of the screen should now switch from red to orange and after a few seconds to green. You are now connected to the Lichtschranke.
+You might need to restart the application at the first connection attempt.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Bluetooth debbuging
+If there are any issues with the bluetooth connection, you can connect the goal light barrier with USB-C to your Computer and open up Serial connection.
