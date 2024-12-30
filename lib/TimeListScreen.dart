@@ -32,7 +32,7 @@ class TimeListScreen extends StatelessWidget {
                   child: Material(
                     elevation: 2,
                     borderRadius: BorderRadius.circular(30.0),
-                    child: TextField(
+                    child: TextFormField(
                       decoration: const InputDecoration(
                         hintText: 'Nach Namen suchen',
                         border: OutlineInputBorder(
@@ -46,8 +46,10 @@ class TimeListScreen extends StatelessWidget {
                         contentPadding:
                         EdgeInsets.symmetric(vertical: 14.0),
                       ),
+                      initialValue: appState.searchedName,
                       onChanged: (value) {
-                        appState.filterTimes(value);
+                        appState.searchedName = value;
+                        appState.createFilteredTimes();
                       },
                     ),
                   ),

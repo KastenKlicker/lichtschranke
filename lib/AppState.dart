@@ -29,14 +29,17 @@ class AppState extends ChangeNotifier {
   late Device lichtschranke;
 
   DateTimeRange initialDateRange = DateTimeRange(
-      start: DateTime.now().subtract(Duration(days: DateTime.now().weekday -1)), // Get Week start
+      start: DateTime.utc(2000),
       end: DateTime.now());
+  
+  String _searchedName = "";
 
   // Getter
   String get connectionStatus => _connectionStatus;
   bool get isRunning => _isRunning;
   Duration get elapsedTime => _elapsedTime;
   String get distance => _distance;
+  String get searchedName => _searchedName;
   UnmodifiableListView<TimeEntry> get filteredTimes =>
       UnmodifiableListView(_filteredTimes);
 
@@ -50,6 +53,11 @@ class AppState extends ChangeNotifier {
     _isRunning = value;
   }
 
+
+  set searchedName(String value) {
+    _searchedName = value;
+  } 
+  
   // Constructor
   AppState() {
     _loadTimes();
@@ -96,8 +104,7 @@ class AppState extends ChangeNotifier {
 
   void addTimeEntryToSet(TimeEntry timeEntry) {
     timeEntries.add(timeEntry);
-    _filteredTimes = List.from(timeEntries);  // Update filteredTimes
-    notifyListeners();
+    createFilteredTimes();
   }
 
   Future<void> _initializeBluetooth() async {
@@ -210,8 +217,7 @@ class AppState extends ChangeNotifier {
 
       // Add timeEntry, to Set
     timeEntries.add(newEntry);
-    _filteredTimes = List.from(timeEntries);
-    notifyListeners();
+    createFilteredTimes();
     
     _saveTimes(); // TODO Useless?
   }
@@ -245,27 +251,28 @@ class AppState extends ChangeNotifier {
   }
 
   /// Filters the TimeEntries by recorded Date
-  Future<void> selectDateRange(BuildContext context) async {
+  Future<void> selectDateRange(BuildContext context) async {    
+    DateTime startDate = (initialDateRange.start == DateTime.utc(2000)
+        ? DateTime.now().subtract(Duration(days: DateTime.now().weekday -1))
+        : initialDateRange.start);
+    
+    DateTime endDate = (startDate.isAfter(initialDateRange.end))
+        ? startDate.add(const Duration(days: 1))
+        : initialDateRange.end;
+    
+    DateTimeRange dateTimeRange = DateTimeRange(start: startDate, end: endDate);
+    
     DateTimeRange? selectedDateRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
-      initialDateRange: initialDateRange,
+      initialDateRange: dateTimeRange,
     );
     
     if (selectedDateRange != null) {
-      filterByDateRange(selectedDateRange);
       initialDateRange = selectedDateRange;
+      createFilteredTimes();
     }
-  }
-
-  void filterByDateRange(DateTimeRange dateTimeRange) {
-    _filteredTimes = timeEntries
-        .where((entry) =>
-    entry.date.isAfter(dateTimeRange.start) &&
-        entry.date.isBefore(dateTimeRange.end.add(const Duration(days: 1))))
-        .toList();
-    notifyListeners();
   }
 
   /// Loads time from internal storage
@@ -298,11 +305,20 @@ class AppState extends ChangeNotifier {
     // Save times
     await prefs.setStringList('times', encodedTimes);
   }
-
-  /// Filter TimeEntries by name
-  void filterTimes(String query) {
+  
+  void createFilteredTimes() {
+    _filteredTimes = List.from(timeEntries);
+    
+    // Filter by name
     _filteredTimes = timeEntries
-        .where((entry) => entry.name.toLowerCase().contains(query.toLowerCase()))
+        .where((entry) => entry.name.toLowerCase().contains(_searchedName.toLowerCase()))
+        .toList();
+
+    // Filter by date
+    _filteredTimes = _filteredTimes
+        .where((entry) =>
+          entry.date.isAfter(initialDateRange.start) &&
+          entry.date.isBefore(initialDateRange.end.add(const Duration(days: 1))))
         .toList();
     notifyListeners();
   }
@@ -494,8 +510,7 @@ class AppState extends ChangeNotifier {
 
                       // Create the new TimeEntry
                       timeEntries.add(newEntry);
-                      _filteredTimes = List.from(timeEntries);
-                      notifyListeners();
+                      createFilteredTimes();
 
                       _saveTimes();
                       Navigator.of(context).pop();
