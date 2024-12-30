@@ -22,6 +22,7 @@ class BaseScaffold extends StatelessWidget {
       appBar: appBar, // AppBar, is set by the current screen
       floatingActionButton: floatingActionButton,
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: false,
       body: Column(
         children: [
           // Body, is set by the current screen
