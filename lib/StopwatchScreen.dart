@@ -82,6 +82,7 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
             label: const Text("Distanz"),
             width: 200,
             controller: distanceController,
+            requestFocusOnTap: true,
             onSelected: (String? distanceValue) {
               if (distanceController.text != dropdownValue) {
                 dropdownValue = distanceController.text;
