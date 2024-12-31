@@ -109,7 +109,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> _initializeBluetooth() async {
 
-    // TODO Nicht nur am Anfang prüfen
+    // TODO Nicht nur am Anfang prüfen, auch prüfen wenn auf das Symbol geklickt wird
     
     await _bluetoothClassicPlugin.initPermissions();
     
@@ -196,16 +196,6 @@ class AppState extends ChangeNotifier {
     // To display the most precise time, set the time the same as the received 
     _elapsedTime = Duration(milliseconds: timeInMillis);
     _startTime = DateTime.now().subtract(_elapsedTime);
-
-    // Reset Timer TODO Useless?
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 1), (timer) {
-      final now = DateTime.now();
-      if (_startTime != null) {
-        _elapsedTime = now.difference(_startTime!);
-        notifyListeners();
-      }
-    });
 
     TimeEntry newEntry = TimeEntry(
         timeInMillis: timeInMillis,
