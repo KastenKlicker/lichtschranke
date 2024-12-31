@@ -219,7 +219,7 @@ class AppState extends ChangeNotifier {
     timeEntries.add(newEntry);
     createFilteredTimes();
     
-    _saveTimes(); // TODO Useless?
+    _saveTimes();
   }
 
   Future<void> resetLichtschranke(BuildContext context) async {
@@ -696,12 +696,5 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       _showMenuDialog(context, 'Import fehlgeschlagen: $e');
     }
-  }
-
-  /// Set connection status TODO Not used
-  @Deprecated("Not used, might be removed later on")
-  void updateConnectionStatus(String status) {
-    _connectionStatus = status;
-    notifyListeners();
   }
 }
