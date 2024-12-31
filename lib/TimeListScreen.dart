@@ -123,7 +123,7 @@ class TimeListScreen extends StatelessWidget {
               leading: Icon(Icons.share),
               title: Text("Teilen"),
               onTap: () {
-                appState.exportFilteredTimesToCSV(context);
+                appState.shareFilteredTimes();
               },
             ),
             AboutListTile(
