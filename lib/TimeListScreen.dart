@@ -12,19 +12,32 @@ class TimeListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
 
+    // About App text
+    final ThemeData theme = Theme.of(context);
+    final TextStyle textStyle = theme.textTheme.bodyMedium!;
+    final List<Widget> aboutBoxChildren = <Widget>[
+      const SizedBox(height: 24),
+      RichText(
+        text: TextSpan(
+          children: <TextSpan>[
+            TextSpan(
+                style: textStyle,
+                text: "Lichtschranke is an app designed to measure "
+                      'track & field running times.'
+                      'Learn more about Lichtschranke at '),
+            TextSpan(
+                style: textStyle.copyWith(color: theme.colorScheme.primary),
+                text: 'https://github.com/KastenKlicker/lichtschranke'),
+            TextSpan(style: textStyle, text: '.'),
+          ],
+        ),
+      ),
+    ];
+
     return BaseScaffold(
       appBar: AppBar(
           title: Stack(
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                    icon: 
-                      Icon(Icons.arrow_back, color: Colors.orange,),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    }),
-              ),
               Align(
                 alignment: Alignment.center,
                 child: Padding(
@@ -59,36 +72,71 @@ class TimeListScreen extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: Padding(
                   padding: const EdgeInsets.only(right: 0),
-                  child: PopupMenuButton<String>(
-                    color: Colors.white,
-                    icon: const Icon(Icons.more_vert,
-                        color: Colors.orange), // Optionen
-                    onSelected: (String value) {
-                      if (value == 'Zeitraum') {
-                        // Zeitraum festlegen
-                        appState.selectDateRange(context);
-                      } else if (value == 'Export') {
-                        appState.exportFilteredTimesToCSV(context);
-                      } else if (value == 'Import') {
-                        appState.importCSV(context);
-                      } else {
-                        appState.shareFilteredTimes();
-                      }
-                    },
-                    itemBuilder: (BuildContext context) {
-                      return ['Zeitraum', 'Import', 'Export', 'Teilen']
-                          .map((String choice) {
-                        return PopupMenuItem<String>(
-                          value: choice,
-                          child: Text(choice),
-                        );
-                      }).toList();
-                    },
-                  ),
+                  child: IconButton(
+                      icon:
+                      Icon(Icons.arrow_forward, color: Colors.orange,),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      }),
                 ),
               ),
             ],
-          )),
+          )
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            const DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                ),
+                child:
+                  Text("Lichtschranke",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
+                )),
+            ListTile(
+              leading: Icon(Icons.date_range_rounded),
+              title: Text("Zeitraum"),
+              onTap: () {
+                appState.selectDateRange(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.drive_file_move_outlined),
+              title: Text("Import"),
+              onTap: () {
+                appState.importCSV(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.drive_file_move_rtl_outlined),
+              title: Text("Export"),
+              onTap: () {
+                appState.exportFilteredTimesToCSV(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.share),
+              title: Text("Teilen"),
+              onTap: () {
+                appState.exportFilteredTimesToCSV(context);
+              },
+            ),
+            AboutListTile(
+              icon: Icon(Icons.info),
+              applicationName: "Lichtschranke",
+              applicationVersion: "Dezember 2024", // TODO Change this to update automatic
+              applicationLegalese: "\u{a9} 2024 KastenKlicker",
+              aboutBoxChildren: aboutBoxChildren,
+              applicationIcon: Icon(Icons.watch_later_outlined, size: 50,),
+            )
+          ],
+        ),
+      ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 55.0),
         child: FloatingActionButton(
