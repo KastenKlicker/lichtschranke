@@ -14,7 +14,8 @@ jobs:
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: 'latest'
+        flutter-version: '3.27.1' # Specify a specific version of Flutter
+        channel: stable
 
     - name: Flutter Pub Get
       run: flutter pub get
