@@ -9,6 +9,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
 
     steps:
       - name: Set up Java
@@ -63,27 +66,16 @@ jobs:
           flutter build apk --release
           mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/lichtschranke-${{ env.VERSION }}.apk
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Release APK
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
+        with: 
           tag_name: ${{ env.VERSION }}
-          release_name: ${{ env.VERSION }}
           body: |
             Release of the Flutter APK.
             Changes since the last release:
             ${{ env.NOTES }}
-          draft: false
-          prerelease: false
-
-      - name: Upload APK to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: build/app/outputs/flutter-apk/lichtschranke-${{ env.VERSION }}.apk
-          asset_name: lichtschranke-${{ env.VERSION }}.apk
-          asset_content_type: application/vnd.android.package-archive
+          files: build/app/outputs/flutter-apk/lichtschranke-${{ env.VERSION }}.apk
+            
+          
