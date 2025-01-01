@@ -6,12 +6,14 @@ class BaseScaffold extends StatelessWidget {
   final PreferredSizeWidget? appBar;
   final Widget body;
   final Widget? floatingActionButton;
+  final Drawer? drawer;
 
   const BaseScaffold({
     Key? key,
     this.appBar,
     required this.body,
     this.floatingActionButton,
+    this.drawer,
   }) : super(key: key);
 
   @override
@@ -20,6 +22,7 @@ class BaseScaffold extends StatelessWidget {
 
     return Scaffold(
       appBar: appBar, // AppBar, is set by the current screen
+      drawer: drawer, // Drawer, is set by the current screen
       floatingActionButton: floatingActionButton,
       backgroundColor: Colors.white,
       resizeToAvoidBottomInset: false,
