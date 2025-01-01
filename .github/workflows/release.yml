@@ -34,6 +34,25 @@ jobs:
           exit 1
         fi
 
+    - name: Get Last Release Tag
+      id: last_release
+      run: echo "LAST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+
+    - name: Generate Commit Log
+      id: generate_commit_log
+      run: |
+        LAST_TAG=${{ steps.last_release.outputs.LAST_TAG }}
+        if [ -z "$LAST_TAG" ]; then
+          LAST_TAG=$(git rev-list --max-parents=0 HEAD)
+        fi
+        git log $LAST_TAG..HEAD --pretty=format:"- %s" > commit_log.txt
+
+    - name: Summarize Changes with Copilot
+      id: summarize_changes
+      run: |
+        SUMMARY=$(gh api -X POST https://api.github.com/copilot/summarize -f input=@commit_log.txt -F model=gpt-3.5-turbo)
+        echo "SUMMARY=$SUMMARY" >> $GITHUB_ENV
+
     - name: Build APK
       run: |
         flutter build apk --release
@@ -47,7 +66,10 @@ jobs:
       with:
         tag_name: ${{ env.VERSION }}
         release_name: ${{ env.VERSION }}
-        body: 'Release of the Flutter APK.'
+        body: |
+          Release of the Flutter APK.
+          Changes since the last release:
+          ${{ env.SUMMARY }}
         draft: false
         prerelease: false
 
