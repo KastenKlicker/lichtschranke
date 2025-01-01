@@ -1,0 +1,62 @@
+name: Build and Release Flutter APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: 'latest'
+
+    - name: Flutter Pub Get
+      run: flutter pub get
+
+    - name: Extract Version
+      id: extract_version
+      run: |
+        VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+    - name: Check Existing Releases
+      id: check_releases
+      run: |
+        RELEASES=$(gh api repos/$GITHUB_REPOSITORY/releases --jq '.[].tag_name')
+        if echo "$RELEASES" | grep -q "^${{ env.VERSION }}$"; then
+          echo "Release ${{ env.VERSION }} already exists."
+          exit 1
+        fi
+
+    - name: Build APK
+      run: |
+        flutter build apk --release
+        mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/lichtschranke-${{ env.VERSION }}.apk
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.VERSION }}
+        release_name: ${{ env.VERSION }}
+        body: 'Release of the Flutter APK.'
+        draft: false
+        prerelease: false
+
+    - name: Upload APK to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/app/outputs/flutter-apk/lichtschranke-${{ env.VERSION }}.apk
+        asset_name: lichtschranke-${{ env.VERSION }}.apk
+        asset_content_type: application/vnd.android.package-archive
