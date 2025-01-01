@@ -2,6 +2,9 @@ name: Build and Release Flutter APK
 
 on:
   workflow_dispatch:
+    
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   build:
@@ -28,8 +31,6 @@ jobs:
 
       - name: Check Existing Releases
         id: check_releases
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RELEASES=$(gh api repos/$GITHUB_REPOSITORY/releases --jq '.[].tag_name')
           if echo "$RELEASES" | grep -q "^${{ env.VERSION }}$"; then
