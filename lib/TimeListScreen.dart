@@ -1,9 +1,11 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lichtschranke/base_scaffold.dart';
 import 'package:provider/provider.dart';
 import 'package:lichtschranke/AppState.dart';
 import 'package:lichtschranke/TimeEntry.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TimeListScreen extends StatelessWidget {
   const TimeListScreen({Key? key}) : super(key: key);
@@ -27,7 +29,12 @@ class TimeListScreen extends StatelessWidget {
                       'Learn more about Lichtschranke at '),
             TextSpan(
                 style: textStyle.copyWith(color: theme.colorScheme.primary),
-                text: 'https://github.com/KastenKlicker/lichtschranke'),
+                text: 'https://github.com/KastenKlicker/lichtschranke',
+                recognizer: new TapGestureRecognizer()
+                  ..onTap = () {
+                    launchUrl(Uri.parse('https://github.com/KastenKlicker/lichtschranke'));
+                  },
+            ),
             TextSpan(style: textStyle, text: '.'),
           ],
         ),
