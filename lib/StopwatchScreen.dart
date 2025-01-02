@@ -44,8 +44,12 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
     super.initState();
 
     // Check if a new version is available
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final appState = Provider.of<AppState>(context, listen: false);
+
+      while (appState.newVersionURI == "notInitialized")
+        await Future.delayed(Duration(milliseconds: 100));
+      
       if (appState.newVersionURI.isNotEmpty) {
         _showUpdateDialog(context, appState);
       }

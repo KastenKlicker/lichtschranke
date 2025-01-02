@@ -25,7 +25,7 @@ class AppState extends ChangeNotifier {
   DateTime? _startTime;
   Timer? _timer;
   String _appVersion = "Unknown Version";
-  String _newVersionURI = "";
+  String _newVersionURI = "notInitialized";
   
   SplayTreeSet<TimeEntry> timeEntries = SplayTreeSet();
   List<TimeEntry> _filteredTimes = [];
@@ -134,15 +134,17 @@ class AppState extends ChangeNotifier {
      if (response.statusCode != 200) {
        print("Latest Version GET Request returned ${response.statusCode}!");
        print(response.body);
+       _newVersionURI = "notInitialized";
        return;
      }
      
      Map<String, dynamic> responseBodyMap = jsonDecode(response.body);
      
      // Check if a new version is available
-     if (responseBodyMap["tag_name"] == _appVersion)
+     if (responseBodyMap["tag_name"] == _appVersion) {
+       _newVersionURI = "notInitialized";
        return;
-     
+     }
      _newVersionURI = responseBodyMap["zipball_url"];
   }
 
