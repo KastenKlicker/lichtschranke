@@ -60,8 +60,8 @@ jobs:
           if [ -z "$LAST_TAG" ]; then
           LAST_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
-          NOTES=$(git log $LAST_TAG..HEAD --oneline --pretty=format:"* %s" | sed 's/[^a-zA-Z0-9 *.,-_]/ /g' | tr ' ')
-          echo "NOTES=$NOTES" >> $GITHUB_ENV
+          NOTES=$(git log $LAST_TAG..HEAD --oneline --pretty=format:"* %s")
+          echo -e "NOTES<<EOF\n${NOTES}\nEOF" >> $GITHUB_ENV
 
       - name: Build APK
         run: |
