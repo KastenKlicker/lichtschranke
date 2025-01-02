@@ -134,7 +134,7 @@ class AppState extends ChangeNotifier {
      if (response.statusCode != 200) {
        print("Latest Version GET Request returned ${response.statusCode}!");
        print(response.body);
-       _newVersionURI = "notInitialized";
+       _newVersionURI = "";
        return;
      }
      
@@ -142,10 +142,16 @@ class AppState extends ChangeNotifier {
      
      // Check if a new version is available
      if (responseBodyMap["tag_name"] == _appVersion) {
-       _newVersionURI = "notInitialized";
+       _newVersionURI = "";
        return;
      }
-     _newVersionURI = responseBodyMap["zipball_url"];
+     List<dynamic> assets = responseBodyMap['assets'];
+     if (assets.isNotEmpty && assets[0] is Map<String, dynamic>) {
+       _newVersionURI = assets[0]["browser_download_url"] ?? "";
+       return;
+     }
+
+     _newVersionURI = "";
   }
 
   Future<void> _initializeBluetooth() async {
