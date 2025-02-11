@@ -1,0 +1,83 @@
+name: Build and Release Flutter APK
+
+on:
+  workflow_dispatch:
+    
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+
+    steps:
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: adopt
+          java-version: 21
+          
+      - name: Checkout Repository
+        uses: actions/checkout@v4.2.1
+        with:
+          fetch-depth: 0
+          
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2.18.0
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Extract Version
+        id: extract_version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Check Existing Releases
+        id: check_releases
+        run: |
+          RELEASES=$(gh api repos/$GITHUB_REPOSITORY/releases --jq '.[].tag_name')
+          if echo "$RELEASES" | grep -q "^${{ env.VERSION }}$"; then
+            echo "Release ${{ env.VERSION }} already exists."
+            exit 1
+          fi
+
+      - name: Get Last Release Tag
+        id: last_release
+        run: echo "LAST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+          
+      - name: Generate Release Notes
+        id: generate_notes
+        run: |
+          LAST_TAG=${{ steps.last_release.outputs.LAST_TAG }}
+          if [ -z "$LAST_TAG" ]; then
+          LAST_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          NOTES=$(git log $LAST_TAG..HEAD --oneline --pretty=format:"* %s")
+          echo -e "NOTES<<EOF\n${NOTES}\nEOF" >> $GITHUB_ENV
+
+      - name: Build APK
+        run: |
+          flutter build apk --release
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/lichtschranke-${{ env.VERSION }}.apk
+
+      - name: Release APK
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with: 
+          tag_name: ${{ env.VERSION }}
+          body: |
+            Release of the Flutter APK.
+            Changes since the last release:
+            ${{ env.NOTES }}
+          files: build/app/outputs/flutter-apk/lichtschranke-${{ env.VERSION }}.apk
+            
+          

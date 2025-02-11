@@ -7,6 +7,7 @@ import 'package:lichtschranke/base_scaffold.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'AppState.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class StopwatchScreen extends StatefulWidget {
   @override
@@ -41,6 +42,18 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Check if a new version is available
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final appState = Provider.of<AppState>(context, listen: false);
+
+      while (appState.newVersionURI == "notInitialized")
+        await Future.delayed(Duration(milliseconds: 100));
+      
+      if (appState.newVersionURI.isNotEmpty) {
+        _showUpdateDialog(context, appState);
+      }
+    });
   }
 
   @override
@@ -190,6 +203,41 @@ class _StopwatchScreenState extends State<StopwatchScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showUpdateDialog(BuildContext context, AppState appState) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Neue Version verfügbar!"),
+          content: Text("Jetzt auf Update klicken um die neuste Version zu installieren."),
+          actions: [
+            ElevatedButton(
+              child: Text("Später"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              child: Text("Update", style: TextStyle(color: Colors.white)),
+              onPressed: () async {
+                Uri uri = Uri.parse(appState.newVersionURI);
+                if (!await launchUrl(uri)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Fehler: Die URL konnte nicht geöffnet werden.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                Navigator.of(context).pop();
+              },
+            )
+          ],
+        );
+      },
     );
   }
 

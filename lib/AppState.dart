@@ -12,6 +12,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:csv/csv.dart';
 import 'package:lichtschranke/TimeEntry.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:http/http.dart' as http;
 
 class AppState extends ChangeNotifier {
   
@@ -22,6 +24,8 @@ class AppState extends ChangeNotifier {
   Duration _elapsedTime = Duration.zero;
   DateTime? _startTime;
   Timer? _timer;
+  String _appVersion = "Unknown Version";
+  String _newVersionURI = "notInitialized";
   
   SplayTreeSet<TimeEntry> timeEntries = SplayTreeSet();
   List<TimeEntry> _filteredTimes = [];
@@ -39,6 +43,8 @@ class AppState extends ChangeNotifier {
   Duration get elapsedTime => _elapsedTime;
   String get distance => _distance;
   String get searchedName => _searchedName;
+  String get appVersion => _appVersion;
+  String get newVersionURI => _newVersionURI;
   UnmodifiableListView<TimeEntry> get filteredTimes =>
       UnmodifiableListView(_filteredTimes);
 
@@ -61,6 +67,8 @@ class AppState extends ChangeNotifier {
   AppState() {
     _loadTimes();
     _initializeBluetooth();
+    _getAppVersion();
+    _checkForNewVersion();
   }
 
   void start() {
@@ -104,6 +112,45 @@ class AppState extends ChangeNotifier {
   void addTimeEntryToSet(TimeEntry timeEntry) {
     timeEntries.add(timeEntry);
     createFilteredTimes();
+  }
+
+  void _getAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    _appVersion = packageInfo.version;
+  }
+  
+  void _checkForNewVersion() async {
+    
+     http.Response response = await http.get(
+        Uri.parse('https://api.github.com/repos/KastenKlicker/lichtschranke/releases/latest'),
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      }
+    );
+     
+     // Check if http get request was completed successfully
+     if (response.statusCode != 200) {
+       print("Latest Version GET Request returned ${response.statusCode}!");
+       print(response.body);
+       _newVersionURI = "";
+       return;
+     }
+     
+     Map<String, dynamic> responseBodyMap = jsonDecode(response.body);
+     
+     // Check if a new version is available
+     if (responseBodyMap["tag_name"] == _appVersion) {
+       _newVersionURI = "";
+       return;
+     }
+     List<dynamic> assets = responseBodyMap['assets'];
+     if (assets.isNotEmpty && assets[0] is Map<String, dynamic>) {
+       _newVersionURI = assets[0]["browser_download_url"] ?? "";
+       return;
+     }
+
+     _newVersionURI = "";
   }
 
   Future<void> _initializeBluetooth() async {
