@@ -30,7 +30,6 @@ class AppState extends ChangeNotifier {
   SplayTreeSet<TimeEntry> timeEntries = SplayTreeSet();
   List<TimeEntry> _filteredTimes = [];
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
-  late Device lichtschranke;
 
   DateTimeRange initialDateRange = DateTimeRange(
       start: DateTime.utc(2000),
@@ -155,11 +154,22 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _initializeBluetooth() async {
-
-    // TODO Nicht nur am Anfang prüfen
     
     await _bluetoothClassicPlugin.initPermissions();
     
+    connectToLichtschranke();
+
+    _bluetoothClassicPlugin.onDeviceStatusChanged().listen((status) {
+      _handleBluetoothStatus(status);
+    });
+
+    _bluetoothClassicPlugin.onDeviceDataReceived().listen((event) {
+      _handleData(event);
+    });
+  }
+
+  void connectToLichtschranke() async {
+
     List<Device> deviceList = await _bluetoothClassicPlugin.getPairedDevices();
 
     List<String> deviceNames = <String>[];
@@ -174,19 +184,9 @@ class AppState extends ChangeNotifier {
       notifyListeners();
       return;
     }
+
+    Device lichtschranke = deviceList.where((device) => device.name == "Lichtschranke").first;
     
-    lichtschranke = deviceList.where((device) => device.name == "Lichtschranke").first;
-
-    _bluetoothClassicPlugin.onDeviceStatusChanged().listen((status) {
-      _handleBluetoothStatus(status);
-    });
-
-    _bluetoothClassicPlugin.onDeviceDataReceived().listen((event) {
-      _handleData(event);
-    });
-  }
-
-  void connectToLichtschranke() async {
     await _bluetoothClassicPlugin.connect(lichtschranke.address, "00001101-0000-1000-8000-00805f9b34fb");
   }
 
@@ -244,16 +244,6 @@ class AppState extends ChangeNotifier {
     _elapsedTime = Duration(milliseconds: timeInMillis);
     _startTime = DateTime.now().subtract(_elapsedTime);
 
-    // Reset Timer TODO Useless?
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 1), (timer) {
-      final now = DateTime.now();
-      if (_startTime != null) {
-        _elapsedTime = now.difference(_startTime!);
-        notifyListeners();
-      }
-    });
-
     TimeEntry newEntry = TimeEntry(
         timeInMillis: timeInMillis,
         date: DateTime.now(),
@@ -266,7 +256,7 @@ class AppState extends ChangeNotifier {
     timeEntries.add(newEntry);
     createFilteredTimes();
     
-    _saveTimes(); // TODO Useless?
+    _saveTimes();
   }
 
   Future<void> resetLichtschranke(BuildContext context) async {
@@ -743,12 +733,5 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       _showMenuDialog(context, 'Import fehlgeschlagen: $e');
     }
-  }
-
-  /// Set connection status TODO Not used
-  @Deprecated("Not used, might be removed later on")
-  void updateConnectionStatus(String status) {
-    _connectionStatus = status;
-    notifyListeners();
   }
 }
