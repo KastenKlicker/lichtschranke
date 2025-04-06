@@ -13,6 +13,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:csv/csv.dart';
 import 'package:lichtschranke/TimeEntry.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:usb_serial/transaction.dart';
+import 'package:usb_serial/usb_serial.dart';
 import 'package:http/http.dart' as http;
 
 class AppState extends ChangeNotifier {
@@ -66,6 +68,7 @@ class AppState extends ChangeNotifier {
   // Constructor
   AppState() {
     _loadTimes();
+    _initializeSerial();
     _initializeBluetooth();
     _getAppVersion();
     _checkForNewVersion();
@@ -152,6 +155,56 @@ class AppState extends ChangeNotifier {
 
      _newVersionURI = "";
   }
+  
+  Future<void> _initializeSerial() async {
+    
+    print("Init Serial");
+
+    UsbPort? port;
+    
+    UsbSerial.usbEventStream?.listen((UsbEvent event) async {
+      if (event.event == UsbEvent.ACTION_USB_ATTACHED) {
+        port = await openSerial();
+      } else if (event.event == UsbEvent.ACTION_USB_DETACHED) {
+        port?.close();
+      }
+    });
+  }
+  
+  Future<UsbPort> openSerial() async {
+    print("Open Serial port");
+
+    UsbPort port = (await UsbSerial.create(6790, 29986, UsbSerial.CH34x))!;
+    print("Created port.");
+
+    bool openResult = await port.open();
+    if ( !openResult ) {
+      print("Failed to open port.");
+      return port;
+    }
+    print("Opened port.");
+
+    await port.setDTR(true);
+    await port.setRTS(true);
+    print("Set up DTR AND RTS");
+
+    port.setPortParameters(115200, UsbPort.DATABITS_8,
+        UsbPort.STOPBITS_1, UsbPort.PARITY_NONE);
+    print("Set up Port Parameters");
+
+    Transaction<String> transaction = Transaction.stringTerminated(
+      port.inputStream!,
+      Uint8List.fromList([13,10]), // New line
+    );
+    print("Created transaction");
+
+    // listen
+    transaction.stream.listen( (String data) {
+      _handleData(data);
+    });
+    
+    return port;
+  }
 
   Future<void> _initializeBluetooth() async {
     
@@ -164,7 +217,7 @@ class AppState extends ChangeNotifier {
     });
 
     _bluetoothClassicPlugin.onDeviceDataReceived().listen((event) {
-      _handleData(event);
+      _handleDataBluetooth(event);
     });
   }
 
@@ -213,11 +266,15 @@ class AppState extends ChangeNotifier {
       return difference.abs() < 500;
     });
   }
+  
+  void _handleDataBluetooth(Uint8List event) {
+    
+    _handleData(String.fromCharCodes(event));
+  }
 
   /// Handles Data incoming over Bluetooth
-  void _handleData(Uint8List event) async {  
+  void _handleData(String timeInMillisStr) async {  
     // Get the numbers out of the incoming chars
-    String timeInMillisStr = String.fromCharCodes(event);
     
     timeInMillisStr = timeInMillisStr.split("\n")[0];
     timeInMillisStr.replaceAll(new RegExp(r"\D"), "");
