@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:bluetooth_classic/bluetooth_classic.dart';
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:flutter/material.dart';
+import 'package:lichtschranke/ConnectionStatus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
@@ -19,7 +20,8 @@ import 'package:http/http.dart' as http;
 
 class AppState extends ChangeNotifier {
   
-  String _connectionStatus = "Nicht verbunden.";
+  ConnectionStatus _connectionStatus = new ConnectionStatus("Nicht verbunden.", ConnectionType.DISCONNECTED);
+  
   String _distance = "";
   bool _isRunning = false;
   bool _isReset = false;
@@ -32,6 +34,7 @@ class AppState extends ChangeNotifier {
   SplayTreeSet<TimeEntry> timeEntries = SplayTreeSet();
   List<TimeEntry> _filteredTimes = [];
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
+  UsbPort? _port;
 
   DateTimeRange initialDateRange = DateTimeRange(
       start: DateTime.utc(2000),
@@ -40,7 +43,7 @@ class AppState extends ChangeNotifier {
   String _searchedName = "";
 
   // Getter
-  String get connectionStatus => _connectionStatus;
+  ConnectionStatus get connectionStatus => _connectionStatus;
   bool get isRunning => _isRunning;
   Duration get elapsedTime => _elapsedTime;
   String get distance => _distance;
@@ -91,7 +94,7 @@ class AppState extends ChangeNotifier {
   }
 
   void startOverBluetooth() {
-    if (_connectionStatus == "Verbunden mit Lichtschranke")
+    if (_connectionStatus.isConnected())
       _bluetoothClassicPlugin.write("start\n");
     else
       start();
@@ -105,7 +108,7 @@ class AppState extends ChangeNotifier {
     _startTime = null; // Startzeitpunkt zurücksetzen
     _elapsedTime = Duration.zero;
 
-    if  (_connectionStatus == "Verbunden mit Lichtschranke") {
+    if  (_connectionStatus.isConnected()) {
       resetLichtschranke(context);
     }
 
@@ -159,14 +162,19 @@ class AppState extends ChangeNotifier {
   Future<void> _initializeSerial() async {
     
     print("Init Serial");
-
-    UsbPort? port;
+    
+    if (await UsbSerial.listDevices().then(
+            (List<UsbDevice> list) => list.isNotEmpty))
+      _port = await openSerial();
     
     UsbSerial.usbEventStream?.listen((UsbEvent event) async {
       if (event.event == UsbEvent.ACTION_USB_ATTACHED) {
-        port = await openSerial();
+        _port = await openSerial();
+        
       } else if (event.event == UsbEvent.ACTION_USB_DETACHED) {
-        port?.close();
+        _port?.close();
+        if (_connectionStatus.type == ConnectionType.DISCONNECTED)
+          _connectionStatus.setDisconnected();
       }
     });
   }
@@ -180,6 +188,8 @@ class AppState extends ChangeNotifier {
     bool openResult = await port.open();
     if ( !openResult ) {
       print("Failed to open port.");
+      if (_connectionStatus.isDisconnected())
+        _connectionStatus.setDisconnected();
       return port;
     }
     print("Opened port.");
@@ -202,6 +212,9 @@ class AppState extends ChangeNotifier {
     transaction.stream.listen( (String data) {
       _handleData(data);
     });
+    
+    if (_connectionStatus.isDisconnected())
+      _connectionStatus.setConnected(ConnectionType.SERIAL);
     
     return port;
   }
@@ -233,7 +246,7 @@ class AppState extends ChangeNotifier {
 
     // Check if Lichtschranke is connected with the device
     if (!deviceNames.contains("Lichtschranke")) {
-      _connectionStatus = "Lichtschranke nicht gefunden.";
+      _connectionStatus.set("Lichtschranke nicht gefunden.", ConnectionType.DISCONNECTED);
       notifyListeners();
       return;
     }
@@ -244,16 +257,17 @@ class AppState extends ChangeNotifier {
   }
 
   void _handleBluetoothStatus(int status) {
-    if (status == Device.disconnected) {
-      _connectionStatus = "Nicht verbunden.";
+    if (status == Device.disconnected
+        && _connectionStatus.isDisconnected()) {
+      _connectionStatus.setDisconnected();
       notifyListeners();
     }
     else if (status == Device.connecting) {
-      _connectionStatus = "Verbinde mit Lichtschranke...";
+      _connectionStatus.set("Verbinde mit Lichtschranke...", ConnectionType.CONNECTING);
       notifyListeners();
     }
     else {
-      _connectionStatus = "Verbunden mit Lichtschranke";
+      _connectionStatus.setConnected(ConnectionType.BLUETOOTH);
       notifyListeners();
     }
   }
@@ -317,9 +331,12 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> resetLichtschranke(BuildContext context) async {
-    if (_connectionStatus != "Verbunden mit Lichtschranke") return;
+    if (_connectionStatus.type == ConnectionType.DISCONNECTED) return;
 
-    _bluetoothClassicPlugin.write("reset\n");
+    String reset = "reset\n";
+    
+    _bluetoothClassicPlugin.write(reset);
+    _port?.write(Uint8List.fromList(utf8.encode(reset)));
 
     // Wait for reset ack
     while (!_isReset)
