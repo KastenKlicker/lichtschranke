@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lichtschranke/ConnectionStatus.dart';
 import 'package:provider/provider.dart';
 import 'package:lichtschranke/AppState.dart';
 
@@ -33,9 +34,9 @@ class BaseScaffold extends StatelessWidget {
 
           // Bluetooth Connection status at the bottom of the screen
           Container(
-            color: appState.connectionStatus == "Verbunden mit Lichtschranke"
+            color: appState.connectionStatus.isConnected()
                 ? Colors.green[200]
-                : appState.connectionStatus == "Verbinde mit Lichtschranke..."
+                : appState.connectionStatus.isConnecting()
                 ? Colors.orange[200]
                 : Colors.red[200],
             padding: const EdgeInsets.all(8.0),
@@ -44,33 +45,29 @@ class BaseScaffold extends StatelessWidget {
               children: [
                 IconButton(
                   onPressed: () {
-                    if (appState.connectionStatus !=
-                        "Verbunden mit Lichtschranke" &&
-                        appState.connectionStatus !=
-                            "Verbinde mit Lichtschranke...") {
+                    if (appState.connectionStatus.isConnecting()) {
                       appState.connectToLichtschranke();
                     }
                   },
                   icon: Icon(
-                    Icons.bluetooth,
-                    color: appState.connectionStatus ==
-                        "Verbunden mit Lichtschranke"
+                    appState.connectionStatus.type ==
+                        ConnectionType.SERIAL
+                        ? Icons.cable
+                        : Icons.bluetooth,
+                    color: appState.connectionStatus.isConnected()
                         ? Colors.green
-                        : appState.connectionStatus ==
-                        "Verbinde mit Lichtschranke..."
+                        : appState.connectionStatus.isConnecting()
                         ? Colors.orange
                         : Colors.red,
                   ),
                 ),
                 Expanded(
                   child: Text(
-                    appState.connectionStatus,
+                    appState.connectionStatus.message,
                     style: TextStyle(
-                      color: appState.connectionStatus ==
-                          "Verbunden mit Lichtschranke"
+                      color: appState.connectionStatus.isConnected()
                           ? Colors.green[900]
-                          : appState.connectionStatus ==
-                          "Verbinde mit Lichtschranke..."
+                          : appState.connectionStatus.isConnecting()
                           ? Colors.orange[900]
                           : Colors.red[900],
                     ),
@@ -83,11 +80,9 @@ class BaseScaffold extends StatelessWidget {
                   },
                   icon: Icon(
                       Icons.refresh,
-                      color: appState.connectionStatus ==
-                          "Verbunden mit Lichtschranke"
+                      color: appState.connectionStatus.isConnected()
                           ? Colors.green
-                          : appState.connectionStatus ==
-                          "Verbinde mit Lichtschranke..."
+                          : appState.connectionStatus.isConnecting()
                           ? Colors.orange
                           : Colors.red,),
                 ),
