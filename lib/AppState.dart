@@ -271,15 +271,6 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  /// Checks if the latest TimeEntry is younger than 500ms
-  bool _isLessThan500ms(TimeEntry newEntry) {
-    return timeEntries.any((entry) {
-      if (entry.compareTo(newEntry) == 0) return false;
-      int difference = newEntry.timeInMillis - entry.timeInMillis;
-      return difference.abs() < 500;
-    });
-  }
   
   void _handleDataBluetooth(Uint8List event) {
     
@@ -319,9 +310,6 @@ class AppState extends ChangeNotifier {
         timeInMillis: timeInMillis,
         date: DateTime.now(),
         distance: _distance);
-
-    if (_isLessThan500ms(newEntry))
-      return;
 
       // Add timeEntry, to Set
     timeEntries.add(newEntry);
