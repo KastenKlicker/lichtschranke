@@ -173,8 +173,10 @@ class AppState extends ChangeNotifier {
         
       } else if (event.event == UsbEvent.ACTION_USB_DETACHED) {
         _port?.close();
-        if (_connectionStatus.type == ConnectionType.DISCONNECTED)
+        if (_connectionStatus.isDisconnected()) {
           _connectionStatus.setDisconnected();
+          notifyListeners();          
+        }
       }
     });
   }
@@ -215,6 +217,7 @@ class AppState extends ChangeNotifier {
     
     if (_connectionStatus.isDisconnected())
       _connectionStatus.setConnected(ConnectionType.SERIAL);
+    notifyListeners();
     
     return port;
   }
