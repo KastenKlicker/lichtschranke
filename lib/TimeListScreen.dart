@@ -25,7 +25,7 @@ class TimeListScreen extends StatelessWidget {
             TextSpan(
                 style: textStyle,
                 text: "Lichtschranke is an app designed to measure "
-                      'track & field running times.'
+                      'track & field running times. '
                       'Learn more about Lichtschranke at '),
             TextSpan(
                 style: textStyle.copyWith(color: theme.colorScheme.primary),
@@ -35,7 +35,16 @@ class TimeListScreen extends StatelessWidget {
                     launchUrl(Uri.parse('https://github.com/KastenKlicker/lichtschranke'));
                   },
             ),
-            TextSpan(style: textStyle, text: '.'),
+            TextSpan(style: textStyle, text: '.\n'),
+            TextSpan(style: textStyle, text: 'Privacy Notice: '),
+            TextSpan(
+              style: textStyle.copyWith(color: theme.colorScheme.primary),
+              text: 'https://kastenklicker.de/lichtschranke/privacy-notice-de',
+              recognizer: new TapGestureRecognizer()
+                ..onTap = () {
+                  launchUrl(Uri.parse('https://kastenklicker.de/lichtschranke/privacy-notice-de'));
+                },
+            ),
           ],
         ),
       ),
