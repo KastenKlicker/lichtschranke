@@ -45,13 +45,12 @@ class BaseScaffold extends StatelessWidget {
               children: [
                 IconButton(
                   onPressed: () {
-                    if (appState.connectionStatus.isConnecting()) {
+                    if (!appState.connectionStatus.isBluetooth()) {
                       appState.connectToLichtschranke();
                     }
                   },
                   icon: Icon(
-                    appState.connectionStatus.type ==
-                        ConnectionType.SERIAL
+                    appState.connectionStatus.isSerial()
                         ? Icons.cable
                         : Icons.bluetooth,
                     color: appState.connectionStatus.isConnected()

@@ -136,7 +136,7 @@ class AppState extends ChangeNotifier {
         
       } else if (event.event == UsbEvent.ACTION_USB_DETACHED) {
         _port?.close();
-        if (_connectionStatus.isDisconnected()) {
+        if (_connectionStatus.isSerial()) {
           _connectionStatus.setDisconnected();
           notifyListeners();          
         }
@@ -153,8 +153,6 @@ class AppState extends ChangeNotifier {
     bool openResult = await port.open();
     if ( !openResult ) {
       print("Failed to open port.");
-      if (_connectionStatus.isDisconnected())
-        _connectionStatus.setDisconnected();
       return port;
     }
     print("Opened port.");
@@ -178,9 +176,10 @@ class AppState extends ChangeNotifier {
       _handleData(data);
     });
     
-    if (_connectionStatus.isDisconnected())
+    if (_connectionStatus.isDisconnected()) {
       _connectionStatus.setConnected(ConnectionType.SERIAL);
-    notifyListeners();
+      notifyListeners();
+    }
     
     return port;
   }
@@ -200,6 +199,9 @@ class AppState extends ChangeNotifier {
     });
   }
 
+  /**
+   * Connect to Lichtschranke with bluetooth
+   */
   void connectToLichtschranke() async {
 
     List<Device> deviceList = await _bluetoothClassicPlugin.getPairedDevices();
@@ -223,9 +225,8 @@ class AppState extends ChangeNotifier {
   }
 
   void _handleBluetoothStatus(int status) {
-    if (status == Device.disconnected
-        && _connectionStatus.isDisconnected()) {
-      _connectionStatus.setDisconnected();
+    if (status == Device.connected) {
+      _connectionStatus.setConnected(ConnectionType.BLUETOOTH);
       notifyListeners();
     }
     else if (status == Device.connecting) {
@@ -233,7 +234,7 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
     else {
-      _connectionStatus.setConnected(ConnectionType.BLUETOOTH);
+      _connectionStatus.setDisconnected();
       notifyListeners();
     }
   }
@@ -285,7 +286,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> resetLichtschranke(BuildContext context) async {
-    if (_connectionStatus.type == ConnectionType.DISCONNECTED) return;
+    if (_connectionStatus.isDisconnected()) return;
 
     String reset = "reset\n";
     

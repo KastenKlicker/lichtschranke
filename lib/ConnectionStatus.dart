@@ -37,6 +37,14 @@ class ConnectionStatus {
   bool isDisconnected() {
     return this.type == ConnectionType.DISCONNECTED;
   }
+  
+  bool isSerial() {
+    return this.type == ConnectionType.SERIAL;
+  }
+  
+  bool isBluetooth() {
+    return this.type == ConnectionType.BLUETOOTH;
+  }
 }
 
 enum ConnectionType {CONNECTING, DISCONNECTED, BLUETOOTH, SERIAL}
