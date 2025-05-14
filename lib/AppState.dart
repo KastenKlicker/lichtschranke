@@ -204,6 +204,9 @@ class AppState extends ChangeNotifier {
    */
   void connectToLichtschranke() async {
 
+    _connectionStatus.set("Verbinde mit Lichtschranke...", ConnectionType.CONNECTING);
+    notifyListeners();
+
     List<Device> deviceList = await _bluetoothClassicPlugin.getPairedDevices();
 
     List<String> deviceNames = <String>[];
