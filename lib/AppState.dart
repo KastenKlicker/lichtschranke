@@ -187,8 +187,6 @@ class AppState extends ChangeNotifier {
   Future<void> _initializeBluetooth() async {
     
     await _bluetoothClassicPlugin.initPermissions();
-    
-    connectToLichtschranke();
 
     _bluetoothClassicPlugin.onDeviceStatusChanged().listen((status) {
       _handleBluetoothStatus(status);
@@ -202,8 +200,26 @@ class AppState extends ChangeNotifier {
   /**
    * Connect to Lichtschranke with bluetooth
    */
-  void connectToLichtschranke() async {
+  void connectToLichtschranke(BuildContext context) async {
+    
+    showDialog(context: context, builder: (context) {
 
+      final screenWidth = MediaQuery.of(context).size.width;
+
+      return Dialog.fullscreen(
+        child: Center(
+          child: Text("Verbinde mit Lichtschranke...",
+            style: TextStyle(
+              color: Colors.orange,
+              fontSize: screenWidth * 0.03,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.orange[200],
+      );
+    });
+    
     _connectionStatus.set("Verbinde mit Lichtschranke...", ConnectionType.CONNECTING);
     notifyListeners();
 
@@ -224,7 +240,11 @@ class AppState extends ChangeNotifier {
 
     Device lichtschranke = deviceList.where((device) => device.name == "Lichtschranke").first;
     
-    await _bluetoothClassicPlugin.connect(lichtschranke.address, "00001101-0000-1000-8000-00805f9b34fb");
+    try {
+      await _bluetoothClassicPlugin.connect(lichtschranke.address, "00001101-0000-1000-8000-00805f9b34fb");
+    } finally {
+      Navigator.of(context).pop();
+    }
   }
 
   void _handleBluetoothStatus(int status) {

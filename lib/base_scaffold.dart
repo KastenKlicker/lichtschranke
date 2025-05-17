@@ -44,9 +44,9 @@ class BaseScaffold extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (!appState.connectionStatus.isBluetooth()) {
-                      appState.connectToLichtschranke();
+                      appState.connectToLichtschranke(context);
                     }
                   },
                   icon: Icon(

@@ -5,7 +5,8 @@
     <application
         android:label="Lichtschranke"
         android:name="${applicationName}"
-        android:icon="@mipmap/gescheide_lichtschranke">
+        android:icon="@mipmap/gescheide_lichtschranke"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
