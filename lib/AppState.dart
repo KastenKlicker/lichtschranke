@@ -32,6 +32,7 @@ class AppState extends ChangeNotifier {
   SplayTreeSet<TimeEntry> timeEntries = SplayTreeSet();
   List<TimeEntry> _filteredTimes = [];
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
+  Device _lichtschranke = Device(address: "", name: "Lichtschranke");
   UsbPort? _port;
 
   DateTimeRange initialDateRange = DateTimeRange(
@@ -188,7 +189,7 @@ class AppState extends ChangeNotifier {
     
     await _bluetoothClassicPlugin.initPermissions();
     
-    connectToLichtschranke();
+    scan();
 
     _bluetoothClassicPlugin.onDeviceStatusChanged().listen((status) {
       _handleBluetoothStatus(status);
@@ -200,13 +201,39 @@ class AppState extends ChangeNotifier {
   }
 
   /**
+   * Scan for the Lichtschranke with bluetooth
+   */
+  Future<void> scan() async {
+    
+    if (_connectionStatus.message == "Suche nach Lichtschranke...")
+      return;
+    
+    _connectionStatus.set("Suche nach Lichtschranke...", ConnectionType.CONNECTING);
+    notifyListeners();
+    
+    await _bluetoothClassicPlugin.startScan();
+    _bluetoothClassicPlugin.onDeviceDiscovered().listen(
+          (discoveredDevice) async {
+            if (discoveredDevice.name == "Lichtschranke") {
+              _lichtschranke.address = discoveredDevice.address;
+              await _bluetoothClassicPlugin.stopScan();
+              
+              _connectToLichtschranke();
+            }
+      },
+    );
+  }
+
+
+  /**
    * Connect to Lichtschranke with bluetooth
    */
-  void connectToLichtschranke() async {
+  void _connectToLichtschranke() async {
 
     _connectionStatus.set("Verbinde mit Lichtschranke...", ConnectionType.CONNECTING);
     notifyListeners();
 
+    // TODO Still needed?
     List<Device> deviceList = await _bluetoothClassicPlugin.getPairedDevices();
 
     List<String> deviceNames = <String>[];
@@ -217,7 +244,7 @@ class AppState extends ChangeNotifier {
 
     // Check if Lichtschranke is connected with the device
     if (!deviceNames.contains("Lichtschranke")) {
-      _connectionStatus.set("Lichtschranke nicht gefunden.", ConnectionType.DISCONNECTED);
+      _connectionStatus.set("Lichtschranke nicht gepaart.", ConnectionType.DISCONNECTED);
       notifyListeners();
       return;
     }
@@ -237,8 +264,9 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
     else {
-      _connectionStatus.setDisconnected();
-      notifyListeners();
+      if (_connectionStatus.message != "Lichtschranke nicht gepaart.") {
+        scan();
+      }
     }
   }
   

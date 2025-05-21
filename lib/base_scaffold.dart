@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lichtschranke/ConnectionStatus.dart';
 import 'package:provider/provider.dart';
 import 'package:lichtschranke/AppState.dart';
 
@@ -43,22 +42,15 @@ class BaseScaffold extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  onPressed: () {
-                    if (!appState.connectionStatus.isBluetooth()) {
-                      appState.connectToLichtschranke();
-                    }
-                  },
-                  icon: Icon(
-                    appState.connectionStatus.isSerial()
-                        ? Icons.cable
-                        : Icons.bluetooth,
-                    color: appState.connectionStatus.isConnected()
-                        ? Colors.green
-                        : appState.connectionStatus.isConnecting()
-                        ? Colors.orange
-                        : Colors.red,
-                  ),
+                Icon(
+                  appState.connectionStatus.isSerial()
+                      ? Icons.cable
+                      : Icons.bluetooth,
+                  color: appState.connectionStatus.isConnected()
+                      ? Colors.green
+                      : appState.connectionStatus.isConnecting()
+                      ? Colors.orange
+                      : Colors.red,
                 ),
                 Expanded(
                   child: Text(
