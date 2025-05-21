@@ -32,6 +32,7 @@ class AppState extends ChangeNotifier {
   SplayTreeSet<TimeEntry> timeEntries = SplayTreeSet();
   List<TimeEntry> _filteredTimes = [];
   final BluetoothClassic _bluetoothClassicPlugin = BluetoothClassic();
+  Device _lichtschranke = Device(address: "", name: "Lichtschranke");
   UsbPort? _port;
 
   DateTimeRange initialDateRange = DateTimeRange(
@@ -187,6 +188,8 @@ class AppState extends ChangeNotifier {
   Future<void> _initializeBluetooth() async {
     
     await _bluetoothClassicPlugin.initPermissions();
+    
+    scan();
 
     _bluetoothClassicPlugin.onDeviceStatusChanged().listen((status) {
       _handleBluetoothStatus(status);
@@ -198,31 +201,39 @@ class AppState extends ChangeNotifier {
   }
 
   /**
+   * Scan for the Lichtschranke with bluetooth
+   */
+  Future<void> scan() async {
+    
+    if (_connectionStatus.message == "Suche nach Lichtschranke...")
+      return;
+    
+    _connectionStatus.set("Suche nach Lichtschranke...", ConnectionType.CONNECTING);
+    notifyListeners();
+    
+    await _bluetoothClassicPlugin.startScan();
+    _bluetoothClassicPlugin.onDeviceDiscovered().listen(
+          (discoveredDevice) async {
+            if (discoveredDevice.name == "Lichtschranke") {
+              _lichtschranke.address = discoveredDevice.address;
+              await _bluetoothClassicPlugin.stopScan();
+              
+              _connectToLichtschranke();
+            }
+      },
+    );
+  }
+
+
+  /**
    * Connect to Lichtschranke with bluetooth
    */
-  void connectToLichtschranke(BuildContext context) async {
-    
-    showDialog(context: context, builder: (context) {
+  void _connectToLichtschranke() async {
 
-      final screenWidth = MediaQuery.of(context).size.width;
-
-      return Dialog.fullscreen(
-        child: Center(
-          child: Text("Verbinde mit Lichtschranke...",
-            style: TextStyle(
-              color: Colors.orange,
-              fontSize: screenWidth * 0.03,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        backgroundColor: Colors.orange[200],
-      );
-    });
-    
     _connectionStatus.set("Verbinde mit Lichtschranke...", ConnectionType.CONNECTING);
     notifyListeners();
 
+    // TODO Still needed?
     List<Device> deviceList = await _bluetoothClassicPlugin.getPairedDevices();
 
     List<String> deviceNames = <String>[];
@@ -233,18 +244,14 @@ class AppState extends ChangeNotifier {
 
     // Check if Lichtschranke is connected with the device
     if (!deviceNames.contains("Lichtschranke")) {
-      _connectionStatus.set("Lichtschranke nicht gefunden.", ConnectionType.DISCONNECTED);
+      _connectionStatus.set("Lichtschranke nicht gepaart.", ConnectionType.DISCONNECTED);
       notifyListeners();
       return;
     }
 
     Device lichtschranke = deviceList.where((device) => device.name == "Lichtschranke").first;
     
-    try {
-      await _bluetoothClassicPlugin.connect(lichtschranke.address, "00001101-0000-1000-8000-00805f9b34fb");
-    } finally {
-      Navigator.of(context).pop();
-    }
+    await _bluetoothClassicPlugin.connect(lichtschranke.address, "00001101-0000-1000-8000-00805f9b34fb");
   }
 
   void _handleBluetoothStatus(int status) {
@@ -257,8 +264,9 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
     else {
-      _connectionStatus.setDisconnected();
-      notifyListeners();
+      if (_connectionStatus.message != "Lichtschranke nicht gepaart.") {
+        scan();
+      }
     }
   }
   
